@@ -30,22 +30,21 @@ def MyTransformer(pt.Transformer):
         # raises an error if the specification doesn't match
 ```
 
-------------------------------------------------------------
 | Function | Must have column(s) | Must NOT have column(s) |
-------------------------------------------------------------
+|----------|---------------------|-------------------------|
 | `pta.validate.query_frame(inp, extra_columns=...)` | qid + `extra_columns` | docno |
 | `pta.validate.document_frame(inp, extra_columns=...)` | docno + `extra_columns` | qid |
 | `pta.validate.result_frame(inp, extra_columns=...)` | qid + docno + `extra_columns` | |
 | `pta.validate.columns(inp, includes=..., excludes=...)` | `includes` | `excludes` |
-------------------------------------------------------------
 
 <details>
+
 <summary>Advanced Usage (click to expand)</summary>
-<p>
+
 Sometimes a transformer has multiple acceptable input specifications, e.g., if
 it can act as either a retriever (with a query input) or re-ranker (with a result input).
 In this case, you can specify multiple possible configurations in a `with pta.validate.any(inpt) as v:` block:
-</p>
+
 ```python
 def MyTransformer(pt.Transformer):
     def transform(self, inp: pd.DataFrame):
@@ -60,4 +59,5 @@ def MyTransformer(pt.Transformer):
         if v.mode == 'rerank':
             ...
 ```
+
 </details>
