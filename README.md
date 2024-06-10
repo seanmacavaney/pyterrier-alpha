@@ -4,6 +4,16 @@ Alpha channel of features for [PyTerrier](https://github.com/terrier-org/pyterri
 
 Features in ths package are under development and intend to be merged with the main package or split into a separate package when stable.
 
+<details>
+
+<summary>Table of Contents</summary>
+
+ - [Getting Started](#gettingstarted)
+ - [`pta.validate`](#ptavalidate)
+ - [`pta.DataFrameBuilder`](#ptadataframebuilder)
+
+</details>
+
 ## Getting Started
 
 ```bash
@@ -61,3 +71,51 @@ def MyTransformer(pt.Transformer):
 ```
 
 </details>
+
+## pta.DataFrameBuilder
+
+A common pattern in `Transformer` implementation builds up an intermediate representation of the output DataFrame,
+but this can be a bit clunky, as shown below:
+
+```python
+def MyTransformer(pt.Transformer):
+    def transform(self, inp: pd.DataFrame):
+        result = {
+            'qid': [],
+            'query': [],
+            'docno': [],
+            'score': [],
+        }
+        for qid, query in zip(inp['qid'], inp['query']):
+            docnos, scores = self.some_function(qid, query)
+            result['qid'].append([qid] * len(docnos))
+            result['query'].append([query] * len(docnos))
+            result['docno'].append(docnos)
+            result['score'].append(scores)
+        result = pd.DataFrame({
+            'qid': np.concatenate(result['qid']),
+            'query': np.concatenate(result['query']),
+            'docno': np.concatenate(result['docno']),
+            'score': np.concatenate(result['score']),
+        })
+        return result
+```
+
+`pta.DataFrameBuilder` simplifies the process of building a DataFrame by removing lots of the boilerplate.
+It also automatically handles various types and ensures that all columns end up with the same length.
+The above example can be rewritten with `pta.DataFrameBuilder` as follows:
+
+```python
+def MyTransformer(pt.Transformer):
+    def transform(self, inp: pd.DataFrame):
+        result = pta.DataFrameBuilder(['qid', 'query', 'docno', 'score'])
+        for qid, query in zip(inp['qid'], inp['query']):
+            docnos, scores = self.some_function(qid, query)
+            result.extend({
+                'qid': qid, # automatically repeats to the length of this batch
+                'query': query, # ditto
+                'docno': docnos,
+                'score': scores,
+            })
+        return result.to_df()
+```
