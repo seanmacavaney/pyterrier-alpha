@@ -17,7 +17,7 @@ import pyterrier as pt
 import pyterrier_alpha as pta
 ```
 
-## `pta.validate`
+## pta.validate
 
 It's a good idea to check the input to a transformer to make sure its compatible before you start using it.
 `pta.validate` provides functions for this.
