@@ -1,3 +1,4 @@
+from typing import Optional
 import pandas as pd
 import numpy as np
 
@@ -19,8 +20,17 @@ class DataFrameBuilder:
             else:
                 self._data[k].append(v)
 
-    def to_df(self):
-        return pd.DataFrame({
+    def to_df(self, merge_on_index: Optional[pd.DataFrame] = None):
+        result = pd.DataFrame({
             k: np.concatenate(v)
             for k, v in self._data.items()
         })
+        if merge_on_index is not None:
+            assert '_index' in result
+            merge_on_index = merge_on_index.reset_index(drop=True)
+            result = result.assign(**{
+                col: merge_on_index[col].iloc[result['_index']].values
+                for col in merge_on_index.columns
+                if col not in result.columns
+            }).drop(columns=['_index'])
+        return result
