@@ -11,6 +11,8 @@ Features in ths package are under development and intend to be merged with the m
  - [Getting Started](#gettingstarted)
  - [`pta.validate`](#ptavalidate)
  - [`pta.DataFrameBuilder`](#ptadataframebuilder)
+ - [`pta.Artifact`](#ptaartifact)
+ - [`pta.io`](#ptaio)
 
 </details>
 
@@ -119,3 +121,63 @@ def MyTransformer(pt.Transformer):
             })
         return result.to_df()
 ```
+
+
+## pta.Artifact
+
+Available in: `pyterrier-alpha >= 0.2.0`
+
+An artifact is a component stored on disk, such as an index.
+
+Artifacts usually act as factories for transformers that use them. For example, an index artifact
+may provide a `.retriever()` method that returns a transformer that searches the index.
+
+You can use `pta.Artifact.load('path/to/artifact')` to load an artifact. The function automatically
+identfies the artifact's type and initializes it:
+
+```python
+index = pta.Artifact.load('path/to/msmarco-passage.pisa')
+# PisaIndex('path/to/msmarco-passage.pisa')
+index.bm25() # returns a BM25 PisaRetriever for the index
+```
+
+You can also save and load artifacts from HuggingFace Hub:
+
+```python
+# uploads the artifact to HuggingFace Hub
+index.to_hf('username/repo')
+
+# loads an artifact from HuggingFace Hub
+pta.Artifact.from_hf('username/repo')
+```
+
+## pta.io
+
+Available in: `pyterrier-alpha >= 0.2.0`
+
+`pta.io` includes extra input/output utilities:
+
+**Files/downloads/streaming:**
+
+ - `pta.io.open_or_download_stream(path_or_url: str)`  TODO: document
+ - `pta.io.download_stream(url: str)` TODO: document
+ - `pta.io.download(url: str, path: str)` TODO: document
+ - `pta.io.finalized_directory(path: str)` TODO: document
+ - `pta.io.finalized_open(path: str)` TODO: document
+
+**Hashing/security:**
+
+ - `pta.io.path_is_under_base(path: str, base: str) -> bool`  tests whether `path` refers to a path under `base`. This
+   is helpful to avoid tarbombing.
+ - `pta.io.Sha256BufferedWriter(writer: io.IOBase)` is a wrapper around a `io.IOBase` that keeps track of the SHA256 hash
+   as it is being written to (accessible as the `.sha256` property).
+ - `pta.io.TqdmSha256BufferedSequenceReader()` TODO: document
+
+**Misc:**
+
+ - `pta.io.pyterrier_home() -> str` returns the PyTerrier home directory
+ - `pta.io.byte_count_to_human_readable(byte_count: float) -> str` returns a human-readable version of a
+   byte count, e.g., 4547 bytes -> "4.4 KB". Supports units from B to TB
+ - `pta.io.entry_points(group: str) -> Tuple[EntryPoint, ...]` is an implementation of
+   [`importlib.metadata.entry_points(group)`](https://docs.python.org/3/library/importlib.metadata.html#entry-points)
+   that supports python<=3.12.
