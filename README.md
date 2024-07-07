@@ -159,19 +159,26 @@ Available in: `pyterrier-alpha >= 0.2.0`
 
 **Files/downloads/streaming:**
 
- - `pta.io.open_or_download_stream(path_or_url: str)`  TODO: document
- - `pta.io.download_stream(url: str)` TODO: document
- - `pta.io.download(url: str, path: str)` TODO: document
- - `pta.io.finalized_directory(path: str)` TODO: document
- - `pta.io.finalized_open(path: str)` TODO: document
+ - `pta.io.open_or_download_stream(path_or_url: str)`  Returns a stream of `path_or_url`, depending on whether it is a URL
+   or local file path.
+ - `pta.io.download_stream(url: str)` Returns a stream of `url`.
+ - `pta.io.download(url: str, path: str)` Downloads `url` to `path`.
+ - `pta.io.finalized_directory(path: str)` A context manager that returns a temporary directory. The directory is moved to `path`
+   on successful completion of the context manager, or deleted if an exception is raised during executation.
+ - `pta.io.finalized_open(path: str)` A context manager that returns a temporary file. The file is moved to `path` on successful
+   completion of the context manager, or deleted if an exception is raised during executation.
 
 **Hashing/security:**
 
  - `pta.io.path_is_under_base(path: str, base: str) -> bool`  tests whether `path` refers to a path under `base`. This
    is helpful to avoid tarbombing.
- - `pta.io.Sha256BufferedWriter(writer: io.IOBase)` is a wrapper around a `io.IOBase` that keeps track of the SHA256 hash
-   as it is being written to (accessible as the `.sha256` property).
- - `pta.io.TqdmSha256BufferedSequenceReader()` TODO: document
+ - `pta.io.HashWriter(writer: io.IOBase)` is a wrapper around a `io.IOBase` that keeps track of the hash (default SHA256)
+   as it is being written to (accessible as the `.hash` property).
+ - `pta.io.HashReader(reader: io.IOBase, expected: Optional[str])` is a wrapper around a `io.IOBase` that keeps track of
+   the hash (default SHA256) as it is being read from (accessible as the `.hash` property or the `.hexdigest()` method).
+   If `expected` is provided, an error is thrown when the reader is closed if the `.hexdigest()` does not match this value.
+ - `pta.io.TqdmReader(reader: io.IOBase, total: int, desc: str)` is a wrapper around a `io.IOBase` that shows a tqdm
+   progress bar as the reader is being read.
 
 **Misc:**
 
