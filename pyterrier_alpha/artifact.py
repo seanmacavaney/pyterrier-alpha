@@ -149,7 +149,7 @@ class Artifact:
             build_package(self.path, os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9)
             try:
                 huggingface_hub.create_repo(repo, repo_type='dataset')
-            except HfHubHTTPError as e:
+            except huggingface_hub.utils.HfHubHTTPError as e:
                 if e.server_message != 'You already created this dataset repo':
                     raise
             try:
