@@ -287,11 +287,11 @@ def build_package(artifact_path: str, package_path: Optional[str] = None, verbos
             if verbose:
                 print(f'starting segment {chunk_num}')
             metadata['segments'].append({'idx': chunk_num, 'offset': chunk_start_offset})
-            raw_fout = stack.enter_context(open(f'{package_path}.{chunk_num}', 'wb'))
+            raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
             sha256_fout.replace_writer(raw_fout)
 
     with contextlib.ExitStack() as stack:
-        raw_fout = stack.enter_context(pta.io.finalized_open(package_path, 'b'))
+        raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
         sha256_fout = stack.enter_context(pta.io.HashWriter(raw_fout))
         lz4_fout = stack.enter_context(LZ4FrameFile(sha256_fout, 'wb'))
         tarout = stack.enter_context(tarfile.open(fileobj=lz4_fout, mode='w'))
@@ -330,8 +330,9 @@ def build_package(artifact_path: str, package_path: Optional[str] = None, verbos
         json.dump(metadata, metadata_out)
         metadata_out.write('\n')
 
-    if chunk_num > 0:
-        os.rename(package_path, package_path + '.0')
+    if chunk_num == 0:
+        # no chunking was actually done, can use provided name directly
+        os.rename(f'{package_path}.{chunk_num}', package_path)
 
     return package_path
 
