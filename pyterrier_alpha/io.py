@@ -90,8 +90,8 @@ def download_stream(url: str, *, expected_sha256: Optional[str] = None, verbose:
             raise OSError(f'Unhandled status code: {fin.status}')
 
         if verbose:
-            total = fin.headers.get('Content-Length', None)
-            fin = stack.enter_context(TqdmReader(fin, total, desc=url))
+            total = int(fin.headers.get('Content-Length', 0)) or None
+            fin = stack.enter_context(TqdmReader(fin, total=total, desc=url))
 
         if expected_sha256 is not None:
             fin = stack.enter_context(HashReader(fin, expected=expected_sha256))

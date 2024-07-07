@@ -133,7 +133,7 @@ class Artifact:
                 metadata_out.flush()
                 for member in tar_in:
                     if (member.isfile() or member.isdir()) and pta.io.path_is_under_base(member.path, dout):
-                        fin.pbar.write(f'extracting {member.path} [{pta.io.byte_count_to_human_readable(member.size)}]')
+                        print(f'extracting {member.path} [{pta.io.byte_count_to_human_readable(member.size)}]')
                         tar_in.extract(member, dout, set_attrs=False)
 
         return cls.load(path)
@@ -228,7 +228,7 @@ def load(path: str) -> Artifact:
     if 'type' not in metadata or 'format' not in metadata:
         metadata.update(_metadata_adapter(path))
 
-    if 'type' not in metadata or 'format' in metadata:
+    if 'type' in metadata and 'format' in metadata:
         entry_points = list(pta.io.entry_points('pyterrier.artifact'))
         matching_entry_points = [ep for ep in entry_points if ep.name == '{type}.{format}'.format(**metadata)]
         for entry_point in matching_entry_points:
