@@ -26,10 +26,7 @@ def _finalized_open_base(path: str, mode: str, open_fn) -> io.IOBase:
             yield fout
         os.chmod(path_tmp, 0o666) # default file umask
     except:
-        try:
-            os.remove(path_tmp)
-        except:
-            raise
+        os.remove(path_tmp)
         raise
 
     os.replace(path_tmp, path)
@@ -179,8 +176,19 @@ class _NosyWriter(io.BufferedIOBase, ABC):
         pass
 
     def write(self, data: bytes) -> None:
-        self.writer.write(content)
+        self.writer.write(data)
         self.on_data(data)
+
+    def replace_writer(self, writer: io.IOBase) -> None:
+        self.writer = writer
+        self.seek = self.writer.seek
+        self.tell = self.writer.tell
+        self.seekable = self.writer.seekable
+        self.readable = self.writer.readable
+        self.writable = self.writer.writable
+        self.flush = self.writer.flush
+        self.isatty = self.writer.isatty
+        self.close = self.writer.close
 
 
 class HashReader(_NosyReader):
@@ -227,13 +235,13 @@ class TqdmReader(_NosyReader):
         self.reader.close()
 
 
-class c(_NosyReader):
+class CallbackReader(_NosyReader):
     def __init__(self, reader: io.IOBase, callback):
         super().__init__(reader)
         self.callback = callback
 
     def on_data(self, data: bytes) -> None:
-        self.callback(callback)
+        self.callback(data)
 
 
 class MultiReader(io.BufferedIOBase):

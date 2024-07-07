@@ -145,7 +145,8 @@ class Artifact:
     def to_hf(self, repo, branch='main'):
         import huggingface_hub
         with tempfile.TemporaryDirectory() as d:
-            build_package(self.path, os.path.join(d, 'artifact.tar.lz4'))
+            # build a package with a maximum individual file size of just under 5GB, the limit for HF datasets
+            build_package(self.path, os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9)
             try:
                 huggingface_hub.create_repo(repo, repo_type='dataset')
             except HfHubHTTPError as e:
@@ -244,7 +245,7 @@ def load(path: str) -> Artifact:
     raise ValueError('\n'.join(error))
 
 
-def build_package(artifact_path: str, package_path: Optional[str] = None, verbose: bool = True) -> str:
+def build_package(artifact_path: str, package_path: Optional[str] = None, verbose: bool = True, max_file_size: Optional[float] = None) -> str:
     """
     Build a package from the specified artifact path.
 
@@ -269,7 +270,26 @@ def build_package(artifact_path: str, package_path: Optional[str] = None, verbos
         'contents': [],
     }
 
-    # TODO: support building segmented packages
+    chunk_num = 0
+    chunk_start_offset = 0
+    def manage_maxsize(_):
+        nonlocal raw_fout
+        nonlocal chunk_num
+        nonlocal chunk_start_offset
+        if max_file_size is not None and raw_fout.tell() >= max_file_size:
+            raw_fout.flush()
+            chunk_start_offset += raw_fout.tell()
+            raw_fout.close()
+            if chunk_num == 0:
+                metadata['segments'] = []
+                metadata['segments'].append({'idx': chunk_num, 'offset': 0})
+            chunk_num += 1
+            if verbose:
+                print(f'starting segment {chunk_num}')
+            metadata['segments'].append({'idx': chunk_num, 'offset': chunk_start_offset})
+            raw_fout = stack.enter_context(open(f'{package_path}.{chunk_num}', 'wb'))
+            sha256_fout.replace_writer(raw_fout)
+
     with contextlib.ExitStack() as stack:
         raw_fout = stack.enter_context(pta.io.finalized_open(package_path, 'b'))
         sha256_fout = stack.enter_context(pta.io.HashWriter(raw_fout))
@@ -291,13 +311,16 @@ def build_package(artifact_path: str, package_path: Optional[str] = None, verbos
                 metadata['contents'].append({
                     'path': file_rel_path,
                     'size': tar_record.size,
-                    'offset': raw_fout.tell(),
+                    'offset': chunk_start_offset + raw_fout.tell(),
                 })
                 metadata['total_size'] += tar_record.size
                 if verbose:
                     print(f'adding {file_rel_path} [{pta.io.byte_count_to_human_readable(tar_record.size)}]')
-                with open(file_full_path, 'rb') as fin:
+
+                with open(file_full_path, 'rb') as fin, \
+                     pta.io.CallbackReader(fin, manage_maxsize) as fin:
                     tarout.addfile(tar_record, fin)
+
         tarout.close()
         lz4_fout.close()
 
@@ -306,6 +329,9 @@ def build_package(artifact_path: str, package_path: Optional[str] = None, verbos
         metadata_out = stack.enter_context(pta.io.finalized_open(f'{package_path}.json', 't'))
         json.dump(metadata, metadata_out)
         metadata_out.write('\n')
+
+    if chunk_num > 0:
+        os.rename(package_path, package_path + '.0')
 
     return package_path
 
