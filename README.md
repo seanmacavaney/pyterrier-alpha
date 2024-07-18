@@ -188,3 +188,25 @@ Available in: `pyterrier-alpha >= 0.2.0`
  - `pta.io.entry_points(group: str) -> Tuple[EntryPoint, ...]` is an implementation of
    [`importlib.metadata.entry_points(group)`](https://docs.python.org/3/library/importlib.metadata.html#entry-points)
    that supports python<=3.12.
+
+
+## pta.java
+
+Available in: `pyterrier-alpha >= 0.3.0`
+
+`pta.java` provides infrastructure for working with the Java Virtual Machine (JVM).
+
+The `@pta.java.required` decorator can be applied to any function that needs the JVM to be loaded
+before execution. It automatically starts the JVM if it is not yet started using `pt.init()`. In
+most cases, it is appied to the `__init__` and/or `transform` methods of a Transformer or Artifact.
+
+`pta.java.autoclass` points to [`jnius.autoclass`](https://pyjnius.readthedocs.io/en/latest/api.html#reflection-functions)
+in functions decorated with `@pta.java.required`.
+
+```python
+class MyJavaComponent(pt.Transformer):
+    @pta.java.required()
+    def __init__(self, path):
+        self.SomeClass = pt.java.autoclass('com.my.package.SomeClass')
+        ...
+```
