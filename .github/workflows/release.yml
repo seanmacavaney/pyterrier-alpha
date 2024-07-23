@@ -21,8 +21,8 @@ jobs:
         python setup.py sdist
     - name: upload
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        TWINE_USERNAME: "__token__"
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_KEY }}
       run: |
         twine upload dist/*
   deploy-bdist:
@@ -41,7 +41,7 @@ jobs:
         python setup.py bdist_wheel
     - name: upload
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        TWINE_USERNAME: "__token__"
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_KEY }}
       run: |
         twine upload dist/*
