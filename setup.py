@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyterrier-alpha",
-    version="0.2.1",
+    version="0.2.2",
     author="Sean MacAvaney",
     author_email='sean.macavaney@glasgow.ac.uk',
     description="Alpha channel of features for PyTerrier",
