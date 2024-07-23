@@ -3,5 +3,6 @@ from pyterrier_alpha.dataframe_builder import DataFrameBuilder
 from pyterrier_alpha import io
 from pyterrier_alpha import artifact
 from pyterrier_alpha.artifact import Artifact
+from pyterrier_alpha.rbo import RBO, rbo
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
