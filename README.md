@@ -188,3 +188,42 @@ Available in: `pyterrier-alpha >= 0.2.0`
  - `pta.io.entry_points(group: str) -> Tuple[EntryPoint, ...]` is an implementation of
    [`importlib.metadata.entry_points(group)`](https://docs.python.org/3/library/importlib.metadata.html#entry-points)
    that supports python<=3.12.
+
+
+## pta.RBO
+
+Available in: `pyterrier-alpha >= 0.3.0`
+
+`pta.RBO` provides a `ir_measures`-compatible implementation of [Rank Biased Overlap (RBO)](https://dl.acm.org/doi/10.1145/1852102.1852106).
+RBO is a rank-baised correlation measure. In other words, it measures how similar two ranked lists are with one another, giving
+higher priority to the top of the list. The priority is adjusted using the `p` parameter, as discussed below. Note that RBO
+ignores the qrels; it only compares the current ranking with another one.
+
+`pta.RBO` takes two parameters:
+ - `other` (DataFrame): The ranked list that you want to compare against
+ - `p` (float): the "persistence" parameter in the range of (0, 1), which adjusts how much priority is given to the top of
+   the list. Common values include 0.9 (gives the most priority to top 10 ranks) and 0.99 (top 100).
+
+You can use `pta.RBO` in `pt.Experiment` as follows:
+
+```python
+import pyterrier as pt
+import pyterrier_alpha as pta
+from ir_measures import *
+pt.init()
+
+# define your pipeline(s), dataset, etc.
+... 
+
+# get the "other" list to compare against e.g.,
+other = baseline(dataset.get_topics())
+# or
+other = pt.io.read_results('some_result_file.res')
+
+pt.Experiment(
+    [pipeline],
+    dataset.get_topics(),
+    dataset.get_qrels(),
+    [nDCG@10, pta.RBO(other, p=0.9), pta.RBO(other, p=0.99)]
+)
+```
