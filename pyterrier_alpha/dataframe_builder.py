@@ -33,4 +33,7 @@ class DataFrameBuilder:
                 for col in merge_on_index.columns
                 if col not in result.columns
             }).drop(columns=['_index'])
+            merge_columns = set(merge_on_index.columns)
+            column_order = list(merge_on_index.columns) + [c for c in result.columns if c not in merge_columns]
+            result = result[column_order]
         return result
