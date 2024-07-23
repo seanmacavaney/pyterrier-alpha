@@ -1,15 +1,20 @@
 import setuptools
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+def get_version(path):
+    for line in open(path, 'rt'):
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
 
 setuptools.setup(
     name="pyterrier-alpha",
-    version="0.2.2",
+    version=get_version("pyterrier_alpha/__init__.py"),
     author="Sean MacAvaney",
     author_email='sean.macavaney@glasgow.ac.uk',
     description="Alpha channel of features for PyTerrier",
-    long_description=long_description,
+    long_description=open('README.md', 'rt').read(),
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     install_requires=[
