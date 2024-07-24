@@ -3,7 +3,7 @@ import ir_measures
 
 
 def RBO(other, p=0.99, *, name: Optional[str] = None):
-    return ir_measures.define(_rbo_wrapper(other, p=0.999), name=name or f'RBO(p={p})')
+    return ir_measures.define(_rbo_wrapper(other, p=p), name=name or f'RBO(p={p})')
 
 
 def _rbo_wrapper(a, p=0.99):

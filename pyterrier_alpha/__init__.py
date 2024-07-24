@@ -5,4 +5,4 @@ from pyterrier_alpha import artifact
 from pyterrier_alpha.artifact import Artifact
 from pyterrier_alpha.rbo import RBO, rbo
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
