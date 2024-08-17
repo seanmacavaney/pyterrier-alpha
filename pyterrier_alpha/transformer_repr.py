@@ -9,7 +9,10 @@ def transformer_repr(self):
     for p in signature.parameters.values():
         if p.kind not in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             mode = 'kwd'
-        val = getattr(self, p.name)
+        try:
+            val = getattr(self, f'_{p.name}')
+        except AttributeError:
+            val = getattr(self, p.name)
         if val != p.default:
             args.append(f'{p.name}={val!r}' if mode == 'kwd' else repr(val))
         else:
