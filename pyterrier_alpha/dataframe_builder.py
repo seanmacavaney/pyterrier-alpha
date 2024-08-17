@@ -9,8 +9,10 @@ class DataFrameBuilder:
     def extend(self, values):
         assert all(c in values.keys() for c in self._data), f"all columns must be provided: {list(self._data)}"
         lens = {k: len(v) for k, v in values.items() if hasattr(v, '__len__') and not isinstance(v, str)}
-        assert any(lens), "at least one value must have a length"
-        first_len = list(lens.values())[0]
+        if any(lens):
+            first_len = list(lens.values())[0]
+        else:
+            first_len = 1 # if nothing has a len, everything is gien a length of 1
         assert all(l == first_len for l in lens.values()), f"all values must have the same length {lens}"
         for k, v in values.items():
             if k not in lens:
