@@ -227,3 +227,31 @@ pt.Experiment(
     [nDCG@10, pta.RBO(other, p=0.9), pta.RBO(other, p=0.99)]
 )
 ```
+
+## pta.transformer_repr
+
+Available in: `pyterrier-alpha >= 0.4.0`
+
+`pta.transformer_repr` provides a drop-in repr implementation for a Transformer's `__repr__`, assuming it adheres to
+a few basic requirements. Namely, it should be able to be constructed using the fields it has of the same name and not
+take `*args` or `**kwargs` in the constructor. For example:
+
+```python
+class MyTransformer(pt.Transformer):
+    def __init__(self, a, b=5, *, other=None):
+        self.a = a
+        self.b = b
+        self.other = other
+
+    def transform(self, inp):
+        ...
+
+    __repr__ = pta.transformer_repr
+
+repr(MyTransformer("hello"))
+# MyTransformer("hello")
+repr(MyTransformer("hello", "world"))
+# MyTransformer("hello", "world")
+repr(MyTransformer("hello", other=5))
+# MyTransformer("hello", other=5)
+```
