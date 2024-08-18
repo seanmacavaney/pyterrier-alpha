@@ -5,7 +5,7 @@ import tarfile
 from pathlib import Path
 from hashlib import sha256
 from typing import Dict, Optional, Union
-from urllib.parse import urlparse
+from urllib.parse import urlparse, ParseResult
 import tempfile
 
 from lz4.frame import LZ4FrameFile
@@ -68,14 +68,17 @@ class Artifact:
         # Support mapping "protocols" of the URL other than http[s]
         # e.g., "hf:abc/xyz@branch" -> "https://huggingface.co/datasets/abc/xyz/resolve/branch/artifact.tar"
         parsed_url = urlparse(url)
-        if parsed_url.scheme == 'hf':
-            org_repo = parsed_url.path
-            # default to ref=main, but allow user to specify another branch, hash, etc, with abc/xyz@branch
-            ref = 'main'
-            if '@' in org_repo:
-                org_repo, ref = org_repo.split('@', 1)
-            url = f'https://huggingface.co/datasets/{org_repo}/resolve/{ref}/artifact.tar.lz4'
-            parsed_url = urlparse(url)
+        protocol_entry_points = {ep.name: ep for ep in pta.io.entry_points('pyterrier.artifact.url_protocol_resolver')}
+        while parsed_url.scheme in protocol_entry_points:
+            resolver = protocol_entry_points[parsed_url.scheme].load()
+            tmp_url = resolver(parsed_url)
+            del protocol_entry_points[parsed_url.scheme] # avoid the possiblity of an infinite loop here
+            if tmp_url is not None:
+                url = tmp_url
+                parsed_url = urlparse(tmp_url)
+
+        if parsed_url.scheme == '' and os.path.exists(url) and os.path.isdir(url):
+            return cls.load(url) # already resolved to a directory, load this
 
         # buid local path
         base_path = os.path.join(pta.io.pyterrier_home(), 'artifacts')
@@ -347,3 +350,12 @@ def path_repr(path):
         if 'path' in artifact_info:
             return f'{path!r} <from {artifact_info["path"]!r}>'
     return repr(path)
+
+
+def _hf_url_resolver(parsed_url: ParseResult) -> str:
+    org_repo = parsed_url.path
+    # default to ref=main, but allow user to specify another branch, hash, etc, with abc/xyz@branch
+    ref = 'main'
+    if '@' in org_repo:
+        org_repo, ref = org_repo.split('@', 1)
+    return f'https://huggingface.co/datasets/{org_repo}/resolve/{ref}/artifact.tar.lz4'

@@ -20,5 +20,10 @@ setuptools.setup(
     install_requires=[
       'python-terrier',
     ],
+    entry_points={
+        'pyterrier.artifact.url_protocol_resolver': [
+            'hf = pyterrier_alpha.artifact:_hf_url_resolver',
+        ]
+    },
     python_requires='>=3.6',
 )

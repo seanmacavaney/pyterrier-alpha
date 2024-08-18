@@ -6,4 +6,4 @@ from pyterrier_alpha.artifact import Artifact
 from pyterrier_alpha.rbo import RBO, rbo
 from pyterrier_alpha.transformer_repr import transformer_repr
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
