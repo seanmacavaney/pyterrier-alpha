@@ -151,8 +151,9 @@ class Artifact:
         import huggingface_hub
         with tempfile.TemporaryDirectory() as d:
             # build a package with a maximum individual file size of just under 5GB, the limit for HF datasets
-            self.build_package(os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9)
-            readme = self._hf_readme(repo=repo, branch=branch, pretty_name=pretty_name)
+            metadata = {}
+            self.build_package(os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9, metadata_out=metadata)
+            readme = self._hf_readme(repo=repo, branch=branch, pretty_name=pretty_name, metadata=metadata)
             if readme:
                 with open(f'{d}/README.md', 'wt') as fout:
                     fout.write(readme)
@@ -208,7 +209,7 @@ class Artifact:
             metadata['package_hint'] = self.__class__.__module__.split('.')[0]
         return metadata
 
-    def _hf_readme(self, *, repo: str, branch: Optional[str] = 'main', pretty_name: Optional[str] = None) -> Optional[str]:
+    def _hf_readme(self, *, repo: str, branch: Optional[str] = 'main', pretty_name: Optional[str] = None, metadata: Dict[str, Any] = None) -> Optional[str]:
         if pretty_name is None:
             title = repo.split('/')[-1]
             pretty_name = '# pretty_name: "" # Example: "MS MARCO Terrier Index"'
@@ -217,11 +218,17 @@ class Artifact:
             pretty_name = f'pretty_name: {pretty_name!r}'
         if branch != 'main':
             repo = f'{repo}@{branch}'
+        if metadata is None:
+            metadata = {}
+        tags = ['pyterrier', 'pyterrier-artifact']
+        if 'type' in metadata:
+            tags.append('pyterrier-artifact.{type}'.format(**metadata))
+        if 'type' in metadata and 'format' in metadata:
+            tags.append('pyterrier-artifact.{type}.{format}'.format(**metadata))
+        tags = '\n- '.join([''] + tags)
         return f'''---
 {pretty_name}
-tags:
-- pyterrier
-- pyterrier-artifact
+tags:{tags}
 task_categories:
 - text-retrieval
 viewer: false
@@ -251,6 +258,12 @@ artifact = pta.Artifact.from_hf({repo!r})
 ```python
 # TODO: Show how you constructed the artifact.
 ```
+
+## Metadata
+
+```
+{json.dumps(metadata, indent=2)}
+```
 '''
 
     def build_package(
@@ -258,6 +271,7 @@ artifact = pta.Artifact.from_hf({repo!r})
         package_path: Optional[str] = None,
         *,
         max_file_size: Optional[float] = None,
+        metadata_out: Optional[Dict[str, Any]] = None,
         verbose: bool = True,
     ) -> str:
         """Builds a package for this artifact.
@@ -333,12 +347,19 @@ artifact = pta.Artifact.from_hf({repo!r})
                     print(f'adding {rel_path} [{pta.io.byte_count_to_human_readable(tar_record.size)}]')
 
                 if isinstance(file, io.BytesIO):
+                    file.seek(0)
+                    if rel_path == 'pt_meta.json':
+                        metadata_out.update(json.load(file))
+                    file.seek(0)
                     with pta.io.CallbackReader(file, manage_maxsize) as fin:
                         tarout.addfile(tar_record, fin)
                 else:
                     with open(file, 'rb') as fin, \
                          pta.io.CallbackReader(fin, manage_maxsize) as fin:
                         tarout.addfile(tar_record, fin)
+                    if rel_path == 'pt_meta.json':
+                        with open(file, 'rb') as fin:
+                            metadata_out.update(json.load(fin))
 
             tarout.close()
             lz4_fout.close()
