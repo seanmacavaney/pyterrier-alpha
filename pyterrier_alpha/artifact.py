@@ -373,6 +373,8 @@ def load_metadata(path: str) -> Dict:
         FileNotFoundError: If the specified path does not exist.
     """
     if not os.path.isdir(path):
+        if os.path.isfile(path):
+            return {}
         raise FileNotFoundError(f'{path} not found')
 
     metadata_file = os.path.join(path, 'pt_meta.json')
@@ -384,7 +386,9 @@ def load_metadata(path: str) -> Dict:
 
 
 def _metadata_adapter(path):
-    directory_listing = os.listdir(path)
+    directory_listing = []
+    if os.path.isdir(path):
+        directory_listing = os.listdir(path)
     for entry_point in pta.io.entry_points('pyterrier.artifact.metadata_adapter'):
         if (metadata := entry_point.load()(path, directory_listing)) is not None:
             return metadata
