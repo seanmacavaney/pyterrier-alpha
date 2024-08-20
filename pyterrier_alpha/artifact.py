@@ -6,7 +6,7 @@ import io
 import tarfile
 from pathlib import Path
 from hashlib import sha256
-from typing import Dict, Optional, Union, Iterator, Tuple
+from typing import Any, Dict, Optional, Union, Iterator, Tuple
 from urllib.parse import urlparse, ParseResult
 import tempfile
 
@@ -182,12 +182,31 @@ class Artifact:
             expected_sha256=expected_sha256)
 
     def _package_files(self) -> Iterator[Tuple[str, Union[str, io.BytesIO]]]:
+        has_pt_meta_file = False
         for root, dirs, files in os.walk(self.path):
             rel_root = os.path.relpath(root, start=self.path)
             for file in sorted(files):
                 file_full_path = os.path.join(root, file)
                 file_rel_path = os.path.join(rel_root, file) if rel_root != '.' else file
                 yield file_rel_path, file_full_path
+                if file_rel_path == 'pt_meta.json':
+                    has_pt_meta_file = True
+        if not has_pt_meta_file:
+            metadata = self._build_metadata()
+            if metadata is not None:
+                yield 'pt_meta.json', io.BytesIO(json.dumps(metadata).encode())
+
+    def _build_metadata(self) -> Optional[Dict[str, Any]]:
+        metadata = {}
+        if hasattr(self, 'ARTIFACT_TYPE'):
+            metadata['type'] = self.ARTIFACT_TYPE
+        if hasattr(self, 'ARTIFACT_FORMAT'):
+            metadata['format'] = self.ARTIFACT_FORMAT
+        if hasattr(self, 'ARTIFACT_PACKAGE_HINT'):
+            metadata['package_hint'] = self.ARTIFACT_PACKAGE_HINT
+        else:
+            metadata['package_hint'] = self.__class__.__module__.split('.')[0]
+        return metadata
 
     def _hf_readme(self, *, repo: str, branch: Optional[str] = 'main', pretty_name: Optional[str] = None) -> Optional[str]:
         if pretty_name is None:
