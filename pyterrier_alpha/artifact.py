@@ -1,10 +1,12 @@
+import sys
 import contextlib
 import json
 import os
+import io
 import tarfile
 from pathlib import Path
 from hashlib import sha256
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Iterator, Tuple
 from urllib.parse import urlparse, ParseResult
 import tempfile
 
@@ -145,11 +147,15 @@ class Artifact:
     def from_hf(cls, hf_repo: str, branch: str = 'main', *, expected_sha256: Optional[str] = None) -> 'Artifact':
         return cls.from_url(f'hf:{hf_repo}@{branch}', expected_sha256=expected_sha256)
 
-    def to_hf(self, repo, branch='main'):
+    def to_hf(self, repo, *, branch='main', pretty_name: Optional[str] = None):
         import huggingface_hub
         with tempfile.TemporaryDirectory() as d:
             # build a package with a maximum individual file size of just under 5GB, the limit for HF datasets
-            build_package(self.path, os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9)
+            self.build_package(os.path.join(d, 'artifact.tar.lz4'), max_file_size=4.9e9)
+            readme = self._hf_readme(repo=repo, branch=branch, pretty_name=pretty_name)
+            if readme:
+                with open(f'{d}/README.md', 'wt') as fout:
+                    fout.write(readme)
             try:
                 huggingface_hub.create_repo(repo, repo_type='dataset')
             except huggingface_hub.utils.HfHubHTTPError as e:
@@ -160,12 +166,13 @@ class Artifact:
             except huggingface_hub.utils.HfHubHTTPError as e:
                 if not e.server_message.startswith('Reference already exists:'):
                     raise
-            huggingface_hub.upload_folder(
+            path = huggingface_hub.upload_folder(
                 repo_id=repo,
                 folder_path=d,
                 repo_type='dataset',
                 revision=branch,
             )
+            sys.stderr.write(f"\nArtifact uploaded to {path}\nConsider editing the README.md to help explain this artifact to others.\n")
 
     @classmethod
     def from_dataset(cls, dataset: str, variant: str, *, expected_sha256: Optional[str] = None) -> 'Artifact':
@@ -174,6 +181,160 @@ class Artifact:
             branch=f'{dataset}.{variant}',
             expected_sha256=expected_sha256)
 
+    def _package_files(self) -> Iterator[Tuple[str, Union[str, io.BytesIO]]]:
+        for root, dirs, files in os.walk(self.path):
+            rel_root = os.path.relpath(root, start=self.path)
+            for file in sorted(files):
+                file_full_path = os.path.join(root, file)
+                file_rel_path = os.path.join(rel_root, file) if rel_root != '.' else file
+                yield file_rel_path, file_full_path
+
+    def _hf_readme(self, *, repo: str, branch: Optional[str] = 'main', pretty_name: Optional[str] = None) -> Optional[str]:
+        if pretty_name is None:
+            title = repo.split('/')[-1]
+            pretty_name = '# pretty_name: "" # Example: "MS MARCO Terrier Index"'
+        else:
+            title = pretty_name
+            pretty_name = f'pretty_name: {pretty_name!r}'
+        if branch != 'main':
+            repo = f'{repo}@{branch}'
+        return f'''---
+{pretty_name}
+tags:
+- pyterrier
+- pyterrier-artifact
+task_categories:
+- text-retrieval
+viewer: false
+---
+
+# {title}
+
+## Description
+
+*TODO: What is the artifact?*
+
+## Usage
+
+```python
+# Load the artifact
+import pyterrier_alpha as pta
+artifact = pta.Artifact.from_hf({repo!r})
+# TODO: Show how you use the artifact
+```
+
+## Benchmarks
+
+*TODO: Provide benchmarks for the artifact.*
+
+## Reproduction
+
+```python
+# TODO: Show how you constructed the artifact.
+```
+'''
+
+    def build_package(
+        self,
+        package_path: Optional[str] = None,
+        *,
+        max_file_size: Optional[float] = None,
+        verbose: bool = True,
+    ) -> str:
+        """Builds a package for this artifact.
+
+        Packaged artifacts are useful for distributing an artifact as a single file, such as from Artifact.from_url().
+        A separate metadata file is also generated, which gives information about the package's contents, including
+        file sizes and an expected hash for the package.
+
+        Args:
+            package_path: The path of the package to create. Defaults to the artifact path with a .tar.lz4 extension.
+            max_file_size: the (approximate) maximum size of each file.
+            verbose: Whether to display a progress bar when packaging.
+
+        Returns:
+            The path of the package created.
+        """
+        if package_path is None:
+            package_path = str(self.path) + '.tar.lz4'
+
+        metadata = {
+            'expected_sha256': None,
+            'total_size': 0,
+            'contents': [],
+        }
+
+        chunk_num = 0
+        chunk_start_offset = 0
+        def manage_maxsize(_):
+            nonlocal raw_fout
+            nonlocal chunk_num
+            nonlocal chunk_start_offset
+            if max_file_size is not None and raw_fout.tell() >= max_file_size:
+                raw_fout.flush()
+                chunk_start_offset += raw_fout.tell()
+                raw_fout.close()
+                if chunk_num == 0:
+                    metadata['segments'] = []
+                    metadata['segments'].append({'idx': chunk_num, 'offset': 0})
+                chunk_num += 1
+                if verbose:
+                    print(f'starting segment {chunk_num}')
+                metadata['segments'].append({'idx': chunk_num, 'offset': chunk_start_offset})
+                raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
+                sha256_fout.replace_writer(raw_fout)
+
+        with contextlib.ExitStack() as stack:
+            raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
+            sha256_fout = stack.enter_context(pta.io.HashWriter(raw_fout))
+            lz4_fout = stack.enter_context(LZ4FrameFile(sha256_fout, 'wb'))
+            tarout = stack.enter_context(tarfile.open(fileobj=lz4_fout, mode='w'))
+
+            added_dirs = set()
+            for rel_path, file in self._package_files():
+                path_dir, name = os.path.split(rel_path)
+                if path_dir and path_dir not in added_dirs:
+                    tar_record = tarfile.TarInfo(path_dir)
+                    tar_record.type = tarfile.DIRTYPE
+                    tarout.addfile(tar_record)
+                    added_dirs.add(path_dir)
+                lz4_fout.flush() # flush before each file, allowing seeking directly to this file within the archive
+                tar_record = tarfile.TarInfo(rel_path)
+                if isinstance(file, io.BytesIO):
+                    tar_record.size = file.getbuffer().nbytes
+                else:
+                    tar_record.size = os.path.getsize(file)
+                metadata['contents'].append({
+                    'path': rel_path,
+                    'size': tar_record.size,
+                    'offset': chunk_start_offset + raw_fout.tell(),
+                })
+                metadata['total_size'] += tar_record.size
+                if verbose:
+                    print(f'adding {rel_path} [{pta.io.byte_count_to_human_readable(tar_record.size)}]')
+
+                if isinstance(file, io.BytesIO):
+                    with pta.io.CallbackReader(file, manage_maxsize) as fin:
+                        tarout.addfile(tar_record, fin)
+                else:
+                    with open(file, 'rb') as fin, \
+                         pta.io.CallbackReader(fin, manage_maxsize) as fin:
+                        tarout.addfile(tar_record, fin)
+
+            tarout.close()
+            lz4_fout.close()
+
+            metadata['expected_sha256'] = sha256_fout.hexdigest()
+
+            metadata_out = stack.enter_context(pta.io.finalized_open(f'{package_path}.json', 't'))
+            json.dump(metadata, metadata_out)
+            metadata_out.write('\n')
+
+        if chunk_num == 0:
+            # no chunking was actually done, can use provided name directly
+            os.rename(f'{package_path}.{chunk_num}', package_path)
+
+        return package_path
 
 from_url = Artifact.from_url
 from_dataset = Artifact.from_dataset
@@ -246,98 +407,6 @@ def load(path: str) -> Artifact:
     if 'package_hint' in metadata:
         error.append(f'Do you need to `pip install {metadata["package_hint"]}`?')
     raise ValueError('\n'.join(error))
-
-
-def build_package(artifact_path: str, package_path: Optional[str] = None, verbose: bool = True, max_file_size: Optional[float] = None) -> str:
-    """
-    Build a package from the specified artifact path.
-
-    Packaged artifacts are useful for distributing an artifact as a single file, such as from Artifact.from_url().
-    A separate metadata file is also generated, which gives information about the package's contents, including
-    file sizes and an expected hash for the package.
-
-    Args:
-        artifact_path: The path of the artifact to package.
-        package_path: The path of the package to create. Defaults to the artifact path with a .tar.lz4 extension.
-        verbose: Whether to display a progress bar when packaging.
-
-    Returns:
-        The path of the package created.
-    """
-    if package_path is None:
-        package_path = artifact_path + '.tar.lz4'
-
-    metadata = {
-        'expected_sha256': None,
-        'total_size': 0,
-        'contents': [],
-    }
-
-    chunk_num = 0
-    chunk_start_offset = 0
-    def manage_maxsize(_):
-        nonlocal raw_fout
-        nonlocal chunk_num
-        nonlocal chunk_start_offset
-        if max_file_size is not None and raw_fout.tell() >= max_file_size:
-            raw_fout.flush()
-            chunk_start_offset += raw_fout.tell()
-            raw_fout.close()
-            if chunk_num == 0:
-                metadata['segments'] = []
-                metadata['segments'].append({'idx': chunk_num, 'offset': 0})
-            chunk_num += 1
-            if verbose:
-                print(f'starting segment {chunk_num}')
-            metadata['segments'].append({'idx': chunk_num, 'offset': chunk_start_offset})
-            raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
-            sha256_fout.replace_writer(raw_fout)
-
-    with contextlib.ExitStack() as stack:
-        raw_fout = stack.enter_context(pta.io.finalized_open(f'{package_path}.{chunk_num}', 'b'))
-        sha256_fout = stack.enter_context(pta.io.HashWriter(raw_fout))
-        lz4_fout = stack.enter_context(LZ4FrameFile(sha256_fout, 'wb'))
-        tarout = stack.enter_context(tarfile.open(fileobj=lz4_fout, mode='w'))
-
-        for root, dirs, files in os.walk(artifact_path):
-            rel_root = os.path.relpath(root, start=artifact_path)
-            if rel_root != '.':
-                tar_record = tarfile.TarInfo(rel_root)
-                tar_record.type = tarfile.DIRTYPE
-                tarout.addfile(tar_record)
-            for file in sorted(files):
-                lz4_fout.flush() # flush before each file, allowing seeking directly to this file within the archive
-                file_full_path = os.path.join(root, file)
-                file_rel_path = os.path.join(rel_root, file) if rel_root != '.' else file
-                tar_record = tarfile.TarInfo(file_rel_path)
-                tar_record.size = os.path.getsize(file_full_path)
-                metadata['contents'].append({
-                    'path': file_rel_path,
-                    'size': tar_record.size,
-                    'offset': chunk_start_offset + raw_fout.tell(),
-                })
-                metadata['total_size'] += tar_record.size
-                if verbose:
-                    print(f'adding {file_rel_path} [{pta.io.byte_count_to_human_readable(tar_record.size)}]')
-
-                with open(file_full_path, 'rb') as fin, \
-                     pta.io.CallbackReader(fin, manage_maxsize) as fin:
-                    tarout.addfile(tar_record, fin)
-
-        tarout.close()
-        lz4_fout.close()
-
-        metadata['expected_sha256'] = sha256_fout.hexdigest()
-
-        metadata_out = stack.enter_context(pta.io.finalized_open(f'{package_path}.json', 't'))
-        json.dump(metadata, metadata_out)
-        metadata_out.write('\n')
-
-    if chunk_num == 0:
-        # no chunking was actually done, can use provided name directly
-        os.rename(f'{package_path}.{chunk_num}', package_path)
-
-    return package_path
 
 
 def path_repr(path):
