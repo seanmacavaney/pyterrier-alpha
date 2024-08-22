@@ -49,6 +49,22 @@ def MyTransformer(pt.Transformer):
 | `pta.validate.result_frame(inp, extra_columns=...)` | qid + docno + `extra_columns` | |
 | `pta.validate.columns(inp, includes=..., excludes=...)` | `includes` | `excludes` |
 
+
+**Iterable validation**
+
+Available in: `pyterrier-alpha >= 0.6.0`
+
+For indexing pipelines that accept iterators, it checks the fields of the first element. You need
+to first wrap `inp` in `pta.utils.peekable()` for this to work.
+
+```python
+import pyterrier_alpha as pta
+my_iterator = [{'docno': 'doc1'}, {'docno': 'doc2'}, {'docno': 'doc3'}]
+my_iterator = pta.utils.peekable(my_iterator)
+pta.validate.columns_iter(my_iterator, includes=['docno']) # passes
+pta.validate.columns_iter(my_iterator, includes=['docno', 'toks']) # raises error
+```
+
 <details>
 
 <summary>Advanced Usage (click to expand)</summary>
@@ -254,4 +270,28 @@ repr(MyTransformer("hello", "world"))
 # MyTransformer("hello", "world")
 repr(MyTransformer("hello", other=5))
 # MyTransformer("hello", other=5)
+```
+
+## pta.utils.peekable
+
+Available in: `pyterrier-alpha >= 0.6.0`
+
+`pta.utils.peekable` returns an iterator that you can peek ahead into without advancing it.
+
+It's most commonly used with `pta.validate.columns_iter()` to peek into the first element for validation.
+
+```python
+import pyterrier_alpha as pta
+my_iterator = [{'docno': 'doc1'}, {'docno': 'doc2'}, {'docno': 'doc3'}]
+my_iterator = pta.utils.peekable(my_iterator)
+my_iterator.peek()
+{'docno': 'doc1'}
+my_iterator.peek()
+{'docno': 'doc1'}
+next(my_iterator)
+{'docno': 'doc1'}
+next(my_iterator)
+{'docno': 'doc2'}
+my_iterator.peek()
+{'docno': 'doc3'}
 ```
