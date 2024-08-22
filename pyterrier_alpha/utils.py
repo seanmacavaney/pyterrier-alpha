@@ -18,6 +18,9 @@ class PeekableIter:
             return n
         return next(self.base)
 
+    def __iter__(self):
+        return self
+
     def peek(self):
         if self._buffer == _NO_BUFFER:
             self._buffer = next(self.base)
