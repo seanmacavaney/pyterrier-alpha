@@ -118,7 +118,7 @@ class Artifact:
 
                 if 'segments' in download_info:
                     # the file is segmented -- use a sequence reader to stitch them back together
-                    fin = stack.enter_context(pta.io.BufferedSequenceReader(
+                    fin = stack.enter_context(pta.io.MultiReader(
                         pta.io.open_or_download_stream(f'{url}.{i}')
                         for i in range(len(download_info['segments']))
                     ))

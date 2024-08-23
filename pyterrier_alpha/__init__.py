@@ -7,4 +7,4 @@ from pyterrier_alpha.rbo import RBO, rbo
 from pyterrier_alpha.transformer_repr import transformer_repr
 from pyterrier_alpha import utils
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
