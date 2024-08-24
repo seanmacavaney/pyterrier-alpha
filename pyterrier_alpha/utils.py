@@ -1,5 +1,4 @@
-from typing import Iterator, Iterable, Union
-
+from typing import Iterable, Iterator, Union
 
 _NO_BUFFER = object()
 

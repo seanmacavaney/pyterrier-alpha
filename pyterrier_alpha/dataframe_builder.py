@@ -1,6 +1,8 @@
 from typing import Optional
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
 
 class DataFrameBuilder:
     def __init__(self, columns):

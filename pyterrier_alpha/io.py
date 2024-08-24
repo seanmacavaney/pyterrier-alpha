@@ -1,11 +1,11 @@
-import os
 import io
-import tempfile
+import os
 import shutil
+import tempfile
 import urllib
 from abc import ABC, abstractmethod
+from contextlib import ExitStack, contextmanager
 from hashlib import sha256
-from contextlib import contextmanager, ExitStack
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as eps
 from typing import Optional, Tuple
@@ -32,8 +32,7 @@ def _finalized_open_base(path: str, mode: str, open_fn) -> io.IOBase:
 
 
 def finalized_open(path: str, mode: str):
-    """
-    Opens a file for writing, but reverts it if there was an error in the process.
+    """Opens a file for writing, but reverts it if there was an error in the process.
 
     Args:
         path(str): Path of file to open

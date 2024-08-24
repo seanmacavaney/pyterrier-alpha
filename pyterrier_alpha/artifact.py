@@ -1,14 +1,14 @@
-import sys
 import contextlib
+import io
 import json
 import os
-import io
+import sys
 import tarfile
-from pathlib import Path
-from hashlib import sha256
-from typing import Any, Dict, Optional, Union, Iterator, Tuple
-from urllib.parse import urlparse, ParseResult
 import tempfile
+from hashlib import sha256
+from pathlib import Path
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from urllib.parse import ParseResult, urlparse
 
 from lz4.frame import LZ4FrameFile
 
@@ -66,7 +66,6 @@ class Artifact:
         Raises:
             ValueError: If no implementation is found that supports the artifact at the specified path.
         """
-
         # Support mapping "protocols" of the URL other than http[s]
         # e.g., "hf:abc/xyz@branch" -> "https://huggingface.co/datasets/abc/xyz/resolve/branch/artifact.tar"
         parsed_url = urlparse(url)
@@ -381,8 +380,7 @@ from_dataset = Artifact.from_dataset
 
 
 def load_metadata(path: str) -> Dict:
-    """
-    Load the metadata file for the artifact at the specified path.
+    """Load the metadata file for the artifact at the specified path.
 
     Args:
         path: The path of the artifact on disk.
