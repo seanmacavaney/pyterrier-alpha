@@ -8,7 +8,6 @@ from hashlib import sha256
 from contextlib import contextmanager, ExitStack
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as eps
-import pyterrier as pt
 from typing import Optional, Tuple
 
 DEFAULT_CHUNK_SIZE = 16_384 # 16kb
@@ -225,6 +224,7 @@ class HashWriter(_NosyWriter):
 class TqdmReader(_NosyReader):
     def __init__(self, reader: io.IOBase, *, total: int = None, desc: str = None, disable: bool = False):
         super().__init__(reader)
+        import pyterrier as pt
         self.pbar = pt.tqdm(total=total, desc=desc, unit="B", unit_scale=True, unit_divisor=1024, disable=disable)
 
     def on_data(self, data: bytes) -> None:
