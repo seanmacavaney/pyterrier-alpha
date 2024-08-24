@@ -10,7 +10,7 @@ from contextlib import ExitStack, contextmanager
 from hashlib import sha256
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as eps
-from typing import IO, BytesIO, Callable, Iterable, Optional, Tuple
+from typing import IO, BinaryIO, Callable, Iterable, Optional, Tuple
 
 DEFAULT_CHUNK_SIZE = 16_384 # 16kb
 
@@ -267,7 +267,7 @@ class CallbackReader(_NosyReader):
 
 class MultiReader(io.BufferedIOBase):
     """A reader that reads from multiple readers in sequence."""
-    def __init__(self, readers: Iterable[BytesIO]):
+    def __init__(self, readers: Iterable[BinaryIO]):
         """Create a MultiReader."""
         self.readers = readers
         self._reader = next(self.readers)
