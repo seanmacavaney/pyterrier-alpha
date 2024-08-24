@@ -43,13 +43,13 @@ def finalized_open(path: str, mode: str) -> IO:
     Example:
         Returns a contextmanager that provides a file object, so should be used in a "with" statement. E.g.::
 
-            with pt.io.finalized_open("file.txt", "t") as f:
+            with pta.io.finalized_open("file.txt", "t") as f:
                 f.write("some text")
             # file.txt exists with contents "some text"
 
         If there is an error when writing, the file is reverted::
 
-            with pt.io.finalized_open("file.txt", "t") as f:
+            with pta.io.finalized_open("file.txt", "t") as f:
                 f.write("some other text")
                 raise Exception("an error")
             # file.txt remains unchanged (if existed, contents unchanged; if didn't exist, still doesn't)

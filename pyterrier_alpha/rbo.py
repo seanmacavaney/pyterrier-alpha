@@ -7,7 +7,13 @@ import pandas as pd
 
 
 def RBO(other: pd.DataFrame, p: float = 0.99, *, name: Optional[str] = None) -> ir_measures.Measure: # noqa: N802
-    """Create an RBO measure from a dataframe of rankings."""
+    """Create an RBO measure from a dataframe of rankings.
+
+    .. versionadded:: 0.3.0
+
+    .. versionchanged:: 0.3.1
+        Fixed bug where ``p`` wasn't honored.
+    """
     return ir_measures.define(_rbo_wrapper(other, p=p), name=name or f'RBO(p={p})')
 
 
@@ -46,5 +52,8 @@ def _rbo_wrapper(a: pd.DataFrame, p: float = 0.99) -> Callable:
 
 
 def rbo(a: pd.DataFrame, b: pd.DataFrame, p: float = 0.99) -> Iterable[Tuple[str, float]]:
-    """Calculate the Rank Biased Overlap between two rankings."""
+    """Calculate the Rank Biased Overlap between two rankings.
+
+    .. versionadded:: 0.3.0
+    """
     return _rbo_wrapper(a, p)(b)

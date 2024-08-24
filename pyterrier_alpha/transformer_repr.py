@@ -5,7 +5,13 @@ from typing import Any
 
 
 def transformer_repr(self: Any) -> str:
-    """Return a string representation of a transformer instance."""
+    """Return a string representation of a transformer instance.
+
+    .. versionadded:: 0.3.0
+
+    .. versionchanged:: 0.4.2
+        Prioritize fields with ``_name`` above ``name``
+    """
     cls = self.__class__
     init = self.__init__
     signature = inspect.signature(init)
