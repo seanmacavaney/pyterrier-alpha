@@ -1,19 +1,23 @@
-from typing import Optional
+"""Module providing the Rank Biased Overlap (RBO) measure."""
+
+from typing import Callable, Iterable, Optional, Tuple
 
 import ir_measures
+import pandas as pd
 
 
-def RBO(other, p=0.99, *, name: Optional[str] = None):
+def RBO(other: pd.DataFrame, p: float = 0.99, *, name: Optional[str] = None) -> ir_measures.Measure: # noqa: N802
+    """Create an RBO measure from a dataframe of rankings."""
     return ir_measures.define(_rbo_wrapper(other, p=p), name=name or f'RBO(p={p})')
 
 
-def _rbo_wrapper(a, p=0.99):
+def _rbo_wrapper(a: pd.DataFrame, p: float = 0.99) -> Callable:
     # adapted from https://github.com/terrierteam/ir_measures/blob/main/ir_measures/providers/compat_provider.py
     a_q_col = 'query_id' if 'query_id' in a.columns else 'qid'
     a_d_col = 'doc_id' if 'doc_id' in a.columns else 'docno'
     a = a.sort_values(by=[a_q_col, 'score'], ascending=False)
     a = dict(iter(a.groupby(a_q_col)))
-    def inner(qrels, b):
+    def inner(qrels: pd.DataFrame, b: pd.DataFrame) -> Iterable[Tuple[str, float]]:
         # qrels ignored
         b_q_col = 'query_id' if 'query_id' in b.columns else 'qid'
         b_d_col = 'doc_id' if 'doc_id' in b.columns else 'docno'
@@ -41,5 +45,6 @@ def _rbo_wrapper(a, p=0.99):
     return inner
 
 
-def rbo(a, b, p=0.99):
+def rbo(a: pd.DataFrame, b: pd.DataFrame, p: float = 0.99) -> Iterable[Tuple[str, float]]:
+    """Calculate the Rank Biased Overlap between two rankings."""
     return _rbo_wrapper(a, p)(b)

@@ -1,7 +1,11 @@
+"""Module providing a function that calculates a string representation function for transformers."""
+
 import inspect
+from typing import Any
 
 
-def transformer_repr(self):
+def transformer_repr(self: Any) -> str:
+    """Return a string representation of a transformer instance."""
     cls = self.__class__
     init = self.__init__
     signature = inspect.signature(init)

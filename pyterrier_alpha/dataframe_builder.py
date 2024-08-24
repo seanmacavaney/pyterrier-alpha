@@ -1,21 +1,29 @@
-from typing import Optional
+"""Utility to build a DataFrame from a sequence of dictionaries."""
+
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
 
 class DataFrameBuilder:
-    def __init__(self, columns):
+    """Utility to build a DataFrame from a sequence of dictionaries.
+
+    The dictionaries must have the same keys, and the values must be either scalars, or lists of the same length.
+    """
+    def __init__(self, columns: List[str]):
+        """Create a DataFrameBuilder with the given columns."""
         self._data = {c: [] for c in columns}
 
-    def extend(self, values):
+    def extend(self, values: Dict[str, Any]) -> None:
+        """Add a dictionary of values to the DataFrameBuilder."""
         assert all(c in values.keys() for c in self._data), f"all columns must be provided: {list(self._data)}"
         lens = {k: len(v) for k, v in values.items() if hasattr(v, '__len__') and not isinstance(v, str)}
         if any(lens):
             first_len = list(lens.values())[0]
         else:
             first_len = 1 # if nothing has a len, everything is gien a length of 1
-        assert all(l == first_len for l in lens.values()), f"all values must have the same length {lens}"
+        assert all(i == first_len for i in lens.values()), f"all values must have the same length {lens}"
         for k, v in values.items():
             if k not in lens:
                 self._data[k].append([v] * first_len)
@@ -24,7 +32,8 @@ class DataFrameBuilder:
             else:
                 self._data[k].append(v)
 
-    def to_df(self, merge_on_index: Optional[pd.DataFrame] = None):
+    def to_df(self, merge_on_index: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """Convert the DataFrameBuilder to a DataFrame."""
         result = pd.DataFrame({
             k: np.concatenate(v)
             for k, v in self._data.items()

@@ -1,3 +1,5 @@
+"""PyTerrier artifact module."""
+
 import contextlib
 import io
 import json
@@ -24,6 +26,7 @@ class Artifact:
     may provide a `.retriever()` method that returns a transformer that searches the index.
     """
     def __init__(self, path: Union[Path, str]):
+        """Initialize the artifact at the provided URL."""
         self.path: Path = Path(path)
 
     @classmethod
@@ -59,6 +62,8 @@ class Artifact:
 
         Args:
             url: The URL or file path of the artifact.
+            expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
+            verified against this hash and an error will be raised if the hash does not match.
 
         Returns:
             The loaded artifact.
@@ -124,7 +129,6 @@ class Artifact:
                     if expected_sha256 is not None:
                         fin = stack.enter_context(pta.io.HashReader(fin, expected=expected_sha256))
                 else:
-                    hash_fin = None # hash verification handled by open_or_download_stream
                     fin = stack.enter_context(pta.io.open_or_download_stream(url, expected_sha256=expected_sha256))
 
                 cin = fin
@@ -144,9 +148,24 @@ class Artifact:
 
     @classmethod
     def from_hf(cls, hf_repo: str, branch: str = 'main', *, expected_sha256: Optional[str] = None) -> 'Artifact':
+        """Load an artifact from Hugging Face Hub.
+
+        Args:
+            hf_repo: The Hugging Face repository name.
+            branch: The branch or tag of the repository to load. (Default: main)
+            expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
+            verified against this hash and an error will be raised if the hash does not match.
+        """
         return cls.from_url(f'hf:{hf_repo}@{branch}', expected_sha256=expected_sha256)
 
-    def to_hf(self, repo, *, branch='main', pretty_name: Optional[str] = None):
+    def to_hf(self, repo: str, *, branch: str = 'main', pretty_name: Optional[str] = None) -> None:
+        """Upload this artifact to Hugging Face Hub.
+
+        Args:
+            repo: The Hugging Face repository name.
+            branch: The branch or tag of the repository to upload to. (Default: main)
+            pretty_name: The human-readable name of the artifact. (Default: the repository name)
+        """
         import huggingface_hub
         with tempfile.TemporaryDirectory() as d:
             # build a package with a maximum individual file size of just under 5GB, the limit for HF datasets
@@ -172,10 +191,19 @@ class Artifact:
                 repo_type='dataset',
                 revision=branch,
             )
-            sys.stderr.write(f"\nArtifact uploaded to {path}\nConsider editing the README.md to help explain this artifact to others.\n")
+            sys.stderr.write(f"\nArtifact uploaded to {path}\nConsider editing the README.md to help explain this "
+                              "artifact to others.\n")
 
     @classmethod
     def from_dataset(cls, dataset: str, variant: str, *, expected_sha256: Optional[str] = None) -> 'Artifact':
+        """Load an artifact from a PyTerrier dataset.
+
+        Args:
+            dataset: The name of the dataset.
+            variant: The variant of the dataset.
+            expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
+            verified against this hash and an error will be raised if the hash does not match.
+        """
         return cls.from_hf(
             hf_repo='macavaney/pyterrier-from-dataset',
             branch=f'{dataset}.{variant}',
@@ -208,7 +236,13 @@ class Artifact:
             metadata['package_hint'] = self.__class__.__module__.split('.')[0]
         return metadata
 
-    def _hf_readme(self, *, repo: str, branch: Optional[str] = 'main', pretty_name: Optional[str] = None, metadata: Dict[str, Any] = None) -> Optional[str]:
+    def _hf_readme(self,
+        *,
+        repo: str,
+        branch: Optional[str] = 'main',
+        pretty_name: Optional[str] = None,
+        metadata: Dict[str, Any] = None
+    ) -> Optional[str]:
         if pretty_name is None:
             title = repo.split('/')[-1]
             pretty_name = '# pretty_name: "" # Example: "MS MARCO Terrier Index"'
@@ -282,6 +316,7 @@ artifact = pta.Artifact.from_hf({repo!r})
         Args:
             package_path: The path of the package to create. Defaults to the artifact path with a .tar.lz4 extension.
             max_file_size: the (approximate) maximum size of each file.
+            metadata_out: A dictionary that is updated with the metadata of the artifact (if provided).
             verbose: Whether to display a progress bar when packaging.
 
         Returns:
@@ -298,7 +333,7 @@ artifact = pta.Artifact.from_hf({repo!r})
 
         chunk_num = 0
         chunk_start_offset = 0
-        def manage_maxsize(_):
+        def manage_maxsize(_: None):
             nonlocal raw_fout
             nonlocal chunk_num
             nonlocal chunk_start_offset
@@ -404,7 +439,7 @@ def load_metadata(path: str) -> Dict:
     return {}
 
 
-def _metadata_adapter(path):
+def _metadata_adapter(path: str):
     directory_listing = []
     if os.path.isdir(path):
         directory_listing = os.listdir(path)
@@ -451,7 +486,8 @@ def load(path: str) -> Artifact:
     raise ValueError('\n'.join(error))
 
 
-def path_repr(path):
+def path_repr(path: str) -> str:
+    """Return a string representation of a path, including information from the artifact's metadata file."""
     artifact_info_path = f'{path}.json'
     if os.path.exists(artifact_info_path):
         with open(artifact_info_path) as fin:

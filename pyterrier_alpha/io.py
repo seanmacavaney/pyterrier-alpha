@@ -1,3 +1,5 @@
+"""Extension I/O utilities for PyTerrier."""
+
 import io
 import os
 import shutil
@@ -8,13 +10,13 @@ from contextlib import ExitStack, contextmanager
 from hashlib import sha256
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as eps
-from typing import Optional, Tuple
+from typing import IO, BytesIO, Callable, Iterable, Optional, Tuple
 
 DEFAULT_CHUNK_SIZE = 16_384 # 16kb
 
 
 @contextmanager
-def _finalized_open_base(path: str, mode: str, open_fn) -> io.IOBase:
+def _finalized_open_base(path: str, mode: str, open_fn: Callable) -> io.IOBase:
     assert mode in ('b', 't') # must supply either binary or text mode
     prefix = f'.{os.path.basename(path)}.tmp.'
     dirname = os.path.dirname(path)
@@ -31,7 +33,7 @@ def _finalized_open_base(path: str, mode: str, open_fn) -> io.IOBase:
     os.replace(path_tmp, path)
 
 
-def finalized_open(path: str, mode: str):
+def finalized_open(path: str, mode: str) -> IO:
     """Opens a file for writing, but reverts it if there was an error in the process.
 
     Args:
@@ -57,6 +59,7 @@ def finalized_open(path: str, mode: str):
 
 @contextmanager
 def finalized_directory(path: str) -> str:
+    """Creates a directory, but reverts it if there was an error in the process."""
     prefix = f'.{os.path.basename(path)}.tmp.'
     dirname = os.path.dirname(path)
     try:
@@ -74,6 +77,7 @@ def finalized_directory(path: str) -> str:
 
 
 def download(url: str, path: str, *, expected_sha256: str = None, verbose: bool = True) -> None:
+    """Downloads a file from a URL to a local path."""
     with finalized_open(path) as fout, \
          download_stream(url, expected_sha256=expected_sha256, verbose=verbose) as fin:
         while chunk := fin.read1():
@@ -82,6 +86,7 @@ def download(url: str, path: str, *, expected_sha256: str = None, verbose: bool 
 
 @contextmanager
 def download_stream(url: str, *, expected_sha256: Optional[str] = None, verbose: bool = True) -> io.IOBase:
+    """Downloads a file from a URL to a stream."""
     with ExitStack() as stack:
         fin = stack.enter_context(urllib.request.urlopen(url))
         if fin.status != 200:
@@ -104,6 +109,7 @@ def open_or_download_stream(
     expected_sha256: Optional[str] = None,
     verbose: bool = True
 ) -> io.IOBase:
+    """Opens a file or downloads a file from a URL to a stream."""
     if path_or_url.startswith('http://') or path_or_url.startswith('https://'):
         with download_stream(path_or_url, expected_sha256=expected_sha256, verbose=verbose) as fin:
             yield fin
@@ -190,18 +196,23 @@ class _NosyWriter(io.BufferedIOBase, ABC):
 
 
 class HashReader(_NosyReader):
-    def __init__(self, reader: io.IOBase, *, hashfn=sha256, expected: Optional[str] = None):
+    """A reader that computes the sha256 hash of the data read."""
+    def __init__(self, reader: io.IOBase, *, hashfn: Callable = sha256, expected: Optional[str] = None):
+        """Create a HashReader."""
         super().__init__(reader)
         self.hash = hashfn()
         self.expected = expected
 
     def on_data(self, data: bytes) -> None:
+        """Called when data is read."""
         self.hash.update(data)
 
     def hexdigest(self) -> str:
+        """Return the hexdigest of the hash."""
         return self.hash.hexdigest()
 
     def close(self) -> None:
+        """Close the reader and check the hash."""
         self.reader.close()
         if self.expected is not None:
             if self.expected.lower() != self.hexdigest():
@@ -209,42 +220,55 @@ class HashReader(_NosyReader):
 
 
 class HashWriter(_NosyWriter):
-    def __init__(self, writer: io.IOBase, *, hashfn=sha256):
+    """A writer that computes the sha256 hash of the data written."""
+    def __init__(self, writer: io.IOBase, *, hashfn: Callable = sha256):
+        """Create a HashWriter."""
         super().__init__(writer)
         self.hash = hashfn()
 
     def on_data(self, data: bytes) -> None:
+        """Called when data is written."""
         self.hash.update(data)
 
     def hexdigest(self) -> str:
+        """Return the hexdigest of the hash."""
         return self.hash.hexdigest()
 
 
 class TqdmReader(_NosyReader):
+    """A reader that displays a progress bar."""
     def __init__(self, reader: io.IOBase, *, total: int = None, desc: str = None, disable: bool = False):
+        """Create a TqdmReader."""
         super().__init__(reader)
         import pyterrier as pt
         self.pbar = pt.tqdm(total=total, desc=desc, unit="B", unit_scale=True, unit_divisor=1024, disable=disable)
 
     def on_data(self, data: bytes) -> None:
+        """Called when data is read."""
         self.pbar.update(len(data))
 
     def close(self) -> None:
+        """Close the reader and the progress bar."""
         super().close()
         self.reader.close()
 
 
 class CallbackReader(_NosyReader):
-    def __init__(self, reader: io.IOBase, callback):
+    """A reader that calls a callback with the data read."""
+    def __init__(self, reader: io.IOBase, callback: Callable):
+        """Create a CallbackReader."""
         super().__init__(reader)
         self.callback = callback
 
     def on_data(self, data: bytes) -> None:
+        """Called when data is read."""
         self.callback(data)
 
 
 class MultiReader(io.BufferedIOBase):
-    def __init__(self, readers):
+    """A reader that reads from multiple readers in sequence."""
+    def __init__(self, readers: Iterable[BytesIO]):
+        """Create a MultiReader."""
         self.readers = readers
         self._reader = next(self.readers)
         self.reader = self._reader.__enter__()
@@ -258,6 +282,7 @@ class MultiReader(io.BufferedIOBase):
         self.close = self.reader.close
 
     def read1(self, size: int = -1) -> bytes:
+        """Read a single chunk of data."""
         if size == -1:
             size = DEFAULT_CHUNK_SIZE
         chunk = self.reader.read1(min(size, DEFAULT_CHUNK_SIZE))
@@ -283,6 +308,7 @@ class MultiReader(io.BufferedIOBase):
         return chunk
 
     def read(self, size: int = -1) -> bytes:
+        """Read data."""
         chunk = b''
         if size == -1:
             size = DEFAULT_CHUNK_SIZE
@@ -310,10 +336,12 @@ class MultiReader(io.BufferedIOBase):
 
 
 def path_is_under_base(path: str, base: str) -> bool:
+    """Returns True if the path is under the base directory."""
     return os.path.realpath(os.path.abspath(os.path.join(base, path))).startswith(os.path.realpath(base))
 
 
 def byte_count_to_human_readable(byte_count: float) -> str:
+    """Converts a byte count to a human-readable string."""
     units = ['B', 'KB', 'MB', 'GB', 'TB']
     while byte_count > 1024 and len(units) > 1:
         byte_count /= 1024
@@ -324,6 +352,7 @@ def byte_count_to_human_readable(byte_count: float) -> str:
 
 
 def entry_points(group: str) -> Tuple[EntryPoint, ...]:
+    """Returns the entry points for a given group."""
     try:
         return tuple(eps(group=group))
     except TypeError:
@@ -331,6 +360,7 @@ def entry_points(group: str) -> Tuple[EntryPoint, ...]:
 
 
 def pyterrier_home() -> str:
+    """Returns the PyTerrier home directory."""
     if "PYTERRIER_HOME" in os.environ:
         home = os.environ["PYTERRIER_HOME"]
     else:
