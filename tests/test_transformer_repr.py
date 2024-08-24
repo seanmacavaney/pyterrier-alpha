@@ -1,10 +1,4 @@
-import random
-import tempfile
 import unittest
-import pyterrier_ciff
-import pandas as pd
-import string
-
 import pyterrier as pt
 from pyterrier_alpha import transformer_repr
 

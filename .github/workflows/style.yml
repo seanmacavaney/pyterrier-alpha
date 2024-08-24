@@ -36,4 +36,4 @@ jobs:
         pip install -e .
 
     - name: Ruff
-      run: 'ruff check --output-format=github pyterrier_ciff'
+      run: 'ruff check --output-format=github pyterrier_alpha'
