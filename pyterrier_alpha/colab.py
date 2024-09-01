@@ -96,7 +96,7 @@ def code_html_form(
     else:
         notebook_param = ''
     _url = _URL_TEMPLATE.format(enc_code='', notebook_param=notebook_param)
-    return f'<form action="{_url}" method="POST" class="colaburl">' \
+    return f'<form action="{_url}" method="POST" class="colaburl" target="_blank">' \
            f'<input type="hidden" name="{fmt}" value="{enc_code}">' \
            f'<input type="image" src="{_BADGE_URL}">' \
            '</form>'
