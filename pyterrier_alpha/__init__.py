@@ -3,9 +3,9 @@
 Functionality provided by this package is subject to change in future versions.
 """
 
-__version__ = '0.7.0'
+__version__ = '0.8.0'
 
-from pyterrier_alpha import artifact, io, utils, validate
+from pyterrier_alpha import artifact, colab, io, utils, validate
 from pyterrier_alpha.artifact import Artifact
 from pyterrier_alpha.dataframe_builder import DataFrameBuilder
 from pyterrier_alpha.rbo import RBO, rbo
@@ -16,6 +16,7 @@ __all__ = [
     'DataFrameBuilder',
     'RBO',
     'artifact',
+    'colab',
     'io',
     'rbo',
     'transformer_repr',
