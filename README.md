@@ -295,13 +295,3 @@ next(my_iterator)
 my_iterator.peek()
 {'docno': 'doc3'}
 ```
-
-## pta.colab
-
-Available in: `pyterrier-alpha >= 0.8.0`
-
-`pta.colab` contains functions for working with Colab. For the time being, the main function is:
-`pta.colab.code_html(code, notebook_name='notebook.ipynb')`, which returns HTML code that points to a
-dynamically-generated colab URL for the provided code. The code will either be `<a>` tag or a `<form>`,
-depending on how much code is generated (there's a limit to the URL length handled by most browsers),
-with an "Open in Colab" image in both cases.
