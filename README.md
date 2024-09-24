@@ -198,12 +198,12 @@ Available in: `pyterrier-alpha >= 0.2.0`
 
 **Misc:**
 
- - `pta.io.pyterrier_home() -> str` returns the PyTerrier home directory
  - `pta.io.byte_count_to_human_readable(byte_count: float) -> str` returns a human-readable version of a
    byte count, e.g., 4547 bytes -> "4.4 KB". Supports units from B to TB
  - `pta.io.entry_points(group: str) -> Tuple[EntryPoint, ...]` is an implementation of
    [`importlib.metadata.entry_points(group)`](https://docs.python.org/3/library/importlib.metadata.html#entry-points)
    that supports python<=3.12.
+ - ~~`pta.io.pyterrier_home() -> str` returns the PyTerrier home directory.~~ **Moved to PyTerrier Core in 0.11.0**
 
 
 ## pta.RBO

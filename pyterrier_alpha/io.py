@@ -12,6 +12,8 @@ from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as eps
 from typing import IO, BinaryIO, Callable, Iterable, Optional, Tuple
 
+import pyterrier as pt
+
 DEFAULT_CHUNK_SIZE = 16_384 # 16kb
 
 
@@ -359,12 +361,16 @@ def entry_points(group: str) -> Tuple[EntryPoint, ...]:
         return tuple(eps().get(group, tuple()))
 
 
-def pyterrier_home() -> str:
-    """Returns the PyTerrier home directory."""
-    if "PYTERRIER_HOME" in os.environ:
-        home = os.environ["PYTERRIER_HOME"]
-    else:
-        home = os.path.expanduser('~/.pyterrier')
-    if not os.path.exists(home):
-        os.makedirs(home)
-    return home
+try:
+    # Moved to pyterrier core in 0.11.0
+    pyterrier_home = pt.io.pyterrier_home
+except AttributeError:
+    def pyterrier_home() -> str:
+        """Returns the PyTerrier home directory."""
+        if "PYTERRIER_HOME" in os.environ:
+            home = os.environ["PYTERRIER_HOME"]
+        else:
+            home = os.path.expanduser('~/.pyterrier')
+        if not os.path.exists(home):
+            os.makedirs(home)
+        return home
