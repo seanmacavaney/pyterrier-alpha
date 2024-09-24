@@ -5,7 +5,7 @@ Functionality provided by this package is subject to change in future versions.
 
 __version__ = '0.9.0'
 
-from pyterrier_alpha import artifact, colab, io, utils, validate
+from pyterrier_alpha import artifact, colab, inspect, io, utils, validate
 from pyterrier_alpha.artifact import Artifact
 from pyterrier_alpha.dataframe_builder import DataFrameBuilder
 from pyterrier_alpha.rbo import RBO, rbo
@@ -17,6 +17,7 @@ __all__ = [
     'RBO',
     'artifact',
     'colab',
+    'inspect',
     'io',
     'rbo',
     'transformer_repr',

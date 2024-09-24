@@ -240,14 +240,17 @@ class Artifact:
 
     def _build_metadata(self) -> Optional[Dict[str, Any]]:
         metadata = {}
-        if hasattr(self, 'ARTIFACT_TYPE'):
-            metadata['type'] = self.ARTIFACT_TYPE
-        if hasattr(self, 'ARTIFACT_FORMAT'):
-            metadata['format'] = self.ARTIFACT_FORMAT
+
+        try:
+            metadata['type'], metadata['format'] = pta.inspect.artifact_type_format()
+        except TypeError:
+            pass # couldn't identify type and format
+
         if hasattr(self, 'ARTIFACT_PACKAGE_HINT'):
             metadata['package_hint'] = self.ARTIFACT_PACKAGE_HINT
         else:
             metadata['package_hint'] = self.__class__.__module__.split('.')[0]
+
         return metadata
 
     def _hf_readme(self,
