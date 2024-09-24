@@ -13,6 +13,7 @@ from importlib.metadata import entry_points as eps
 from typing import IO, BinaryIO, Callable, Iterable, Optional, Tuple
 
 import pyterrier as pt
+from deprecated import deprecated
 
 DEFAULT_CHUNK_SIZE = 16_384 # 16kb
 
@@ -361,10 +362,14 @@ def entry_points(group: str) -> Tuple[EntryPoint, ...]:
         return tuple(eps().get(group, tuple()))
 
 
+_REASON = ('python-terrier>=0.11.0 added `pyterrier.io.pyterrier_home`. Use this instead. '
+           '`pyterrier_alpha.io.pyterrier_home` will be removed in a future version.')
+_VERSION = '0.10.0'
 try:
     # Moved to pyterrier core in 0.11.0
-    pyterrier_home = pt.io.pyterrier_home
+    pyterrier_home = deprecated(version=_VERSION, reason=_REASON)(pt.io.pyterrier_home)
 except AttributeError:
+    @deprecated(version=_VERSION, reason=_REASON)
     def pyterrier_home() -> str:
         """Returns the PyTerrier home directory."""
         if "PYTERRIER_HOME" in os.environ:
