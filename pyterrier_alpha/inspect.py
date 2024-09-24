@@ -1,13 +1,8 @@
-"""Module for inspecting the input/output specifications of a transformer."""
-from inspect import Parameter, signature
-from typing import TYPE_CHECKING, List, NamedTuple, Protocol, Tuple, Type, Union, runtime_checkable
-
-import pandas as pd
+"""Module for inspecting pyterrier objects."""
+from typing import Tuple, Type, Union
 
 import pyterrier_alpha as pta
 
-if TYPE_CHECKING: # avoid cyclic import for type checking
-    import pyterrier as pt
 
 def artifact_type_format(artifact: Union[Type, 'pta.Artifact']) -> Tuple[str, str]:
     """Returns the type and format of the specified artifact.
