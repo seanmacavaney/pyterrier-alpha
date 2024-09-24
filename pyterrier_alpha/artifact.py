@@ -147,26 +147,40 @@ class Artifact:
         return cls.load(path)
 
     @classmethod
-    def from_hf(cls, hf_repo: str, branch: str = 'main', *, expected_sha256: Optional[str] = None) -> 'Artifact':
+    def from_hf(cls, repo: str, branch: str = None, *, expected_sha256: Optional[str] = None) -> 'Artifact':
         """Load an artifact from Hugging Face Hub.
 
         Args:
-            hf_repo: The Hugging Face repository name.
-            branch: The branch or tag of the repository to load. (Default: main)
+            repo: The Hugging Face repository name.
+            branch: The branch or tag of the repository to load. (Default: main). A branch can also be provided directly
+            in the repository name using "owner/repo@branch".
             expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
             verified against this hash and an error will be raised if the hash does not match.
         """
-        return cls.from_url(f'hf:{hf_repo}@{branch}', expected_sha256=expected_sha256)
+        if branch is not None:
+            if '@' in repo:
+                raise ValueError('Provided branch in both repository name (via @) and as argument to from_hf')
+            repo = f'{repo}@branch'
+        return cls.from_url(f'hf:{repo}', expected_sha256=expected_sha256)
 
-    def to_hf(self, repo: str, *, branch: str = 'main', pretty_name: Optional[str] = None) -> None:
+    def to_hf(self, repo: str, *, branch: str = None, pretty_name: Optional[str] = None) -> None:
         """Upload this artifact to Hugging Face Hub.
 
         Args:
             repo: The Hugging Face repository name.
-            branch: The branch or tag of the repository to upload to. (Default: main)
+            branch: The branch or tag of the repository to upload to. (Default: main) A branch can also be provided
+            directly in the repository name using "owner/repo@branch".
             pretty_name: The human-readable name of the artifact. (Default: the repository name)
         """
         import huggingface_hub
+
+        if '@' in repo:
+            if branch is not None:
+                raise ValueError('Provided branch in both repository name (via @) and as argument to to_hf')
+            repo, branch = repo.split('@', 1)
+        if branch is None:
+            branch = 'main'
+
         with tempfile.TemporaryDirectory() as d:
             # build a package with a maximum individual file size of just under 5GB, the limit for HF datasets
             metadata = {}
