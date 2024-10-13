@@ -6,7 +6,6 @@ import os
 import sys
 import tarfile
 import tempfile
-from contextlib import contextmanager
 from enum import Enum
 from hashlib import sha256
 from pathlib import Path
