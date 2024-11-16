@@ -23,6 +23,7 @@ def _finalized_open_base(path: str, mode: str, open_fn: Callable) -> io.IOBase:
     assert mode in ('b', 't') # must supply either binary or text mode
     prefix = f'.{os.path.basename(path)}.tmp.'
     dirname = os.path.dirname(path)
+    path_tmp = None
     try:
         fd, path_tmp = tempfile.mkstemp(prefix=prefix, dir=dirname)
         os.close(fd) # mkstemp returns a low-level file descriptor... Close it and re-open the file the normal way
@@ -30,7 +31,8 @@ def _finalized_open_base(path: str, mode: str, open_fn: Callable) -> io.IOBase:
             yield fout
         os.chmod(path_tmp, 0o666) # default file umask
     except:
-        os.remove(path_tmp)
+        if path_tmp is not None:
+            os.remove(path_tmp)
         raise
 
     os.replace(path_tmp, path)
