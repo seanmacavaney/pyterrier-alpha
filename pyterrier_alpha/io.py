@@ -81,7 +81,7 @@ def finalized_directory(path: str) -> str:
 
 def download(url: str, path: str, *, expected_sha256: str = None, verbose: bool = True) -> None:
     """Downloads a file from a URL to a local path."""
-    with finalized_open(path) as fout, \
+    with finalized_open(path, mode='b') as fout, \
          download_stream(url, expected_sha256=expected_sha256, verbose=verbose) as fin:
         while chunk := fin.read1():
             fout.write(chunk)
