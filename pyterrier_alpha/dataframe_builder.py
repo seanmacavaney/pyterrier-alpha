@@ -34,7 +34,7 @@ class DataFrameBuilder:
         .. versionchanged:: 0.7.0
             Automatically infer the ``_index`` field.
 
-        .. versionchanged:: 0.9.1
+        .. versionchanged:: 0.9.2
             Allow broadcasting of input lists with the length of 1. This allows support for inputs like arrays, which
             are not meant to be treated as lists themselves.
 
