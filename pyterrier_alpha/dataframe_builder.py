@@ -34,6 +34,10 @@ class DataFrameBuilder:
         .. versionchanged:: 0.7.0
             Automatically infer the ``_index`` field.
 
+        .. versionchanged:: 0.9.1
+            Allow broadcasting of input lists with the length of 1. This allows support for inputs like arrays, which
+            are not meant to be treated as lists themselves.
+
         Args:
             values: a dictionary of values to add to the DataFrameBuilder. The keys must be the same as the columns
                 provided to the constructor, and the values must be either scalars, or lists (all of the same length).
@@ -42,15 +46,18 @@ class DataFrameBuilder:
             values['_index'] = self._auto_index
             self._auto_index += 1
         assert all(c in values.keys() for c in self._data), f"all columns must be provided: {list(self._data)}"
-        lens = {k: len(v) for k, v in values.items() if hasattr(v, '__len__') and not isinstance(v, str)}
+        lens = {k: len(v) for k, v in values.items() if hasattr(v, '__len__') and not isinstance(v, str) and len(v) > 1}
         if any(lens):
             first_len = list(lens.values())[0]
         else:
-            first_len = 1 # if nothing has a len, everything is gien a length of 1
+            first_len = 1 # if nothing has a len, everything is given a length of 1
         assert all(i == first_len for i in lens.values()), f"all values must have the same length {lens}"
         for k, v in values.items():
             if k not in lens:
-                self._data[k].append([v] * first_len)
+                if isinstance(v, (tuple, list)) and len(v) == 1:
+                    self._data[k].append(v * first_len)
+                else:
+                    self._data[k].append([v] * first_len)
             elif isinstance(v, pd.Series):
                 self._data[k].append(v.values)
             else:
