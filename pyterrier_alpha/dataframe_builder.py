@@ -1,5 +1,6 @@
 """Utility to build a DataFrame from a sequence of dictionaries."""
 
+from itertools import chain
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -72,6 +73,9 @@ class DataFrameBuilder:
         .. versionchanged:: 0.1.1
             Columns from ``merge_on_index`` come first.
 
+        .. versionchanged:: 0.9.3
+            Fixed bug with columns that have values of numpy arrays
+
         Args:
             merge_on_index: an optional DataFrame to merge the resulting DataFrame on.
 
@@ -79,7 +83,10 @@ class DataFrameBuilder:
             A DataFrame with the values added to the DataFrameBuilder.
         """
         result = pd.DataFrame({
-            k: np.concatenate(v)
+            k: (np.concatenate(v)
+                if len(v) > 0 and not isinstance(v[0][0], np.ndarray) else
+                list(chain.from_iterable(v))
+               )
             for k, v in self._data.items()
         })
         if merge_on_index is not None:
