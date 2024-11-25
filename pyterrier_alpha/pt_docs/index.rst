@@ -31,5 +31,6 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     dataframe_builder
     rbo
     io
+    transform
     utils
     validate
