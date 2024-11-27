@@ -30,6 +30,7 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     artifact
     dataframe_builder
     rbo
+    inspect
     io
     transform
     utils
