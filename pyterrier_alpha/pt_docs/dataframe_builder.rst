@@ -1,7 +1,7 @@
 Dataframe Builder
 ==================================================
 
-:class:`~pyterrier_alpha.DataFrameBuilder` provides a simple way to progressivly build a DataFrame in a
+:class:`~pyterrier_alpha.DataFrameBuilder` provides a simple way to progressively build a DataFrame in a
 :class:`~pyterrier.Transformer`.
 
 Usage
@@ -57,10 +57,10 @@ length. The above example can be rewritten with `pta.DataFrameBuilder` as follow
 
 
 You'll often want to *extend* the set of columns passed to a transformer, rather than replacing them.
-For instnace, in the previous example, perhaps ``inp`` includes is a ``my_special_data`` field added by
+For instance, in the previous example, perhaps ``inp`` includes is a ``my_special_data`` field added by
 another transformer that should be passed along to the following step. If you pass the original input
 frame to ``to_df``, the function will try to merge the original frames together. The columns from the
-merged frame will appear before any new coluns.
+merged frame will appear before any new columns.
 
 .. code-block:: python
     :caption: Merging the input frame's data with :class:`~pyterrier_alpha.DataFrameBuilder`

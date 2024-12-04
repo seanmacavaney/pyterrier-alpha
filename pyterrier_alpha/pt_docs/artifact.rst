@@ -1,3 +1,5 @@
+.. _artifacts:
+
 Artifacts
 =============================================
 
@@ -7,7 +9,7 @@ Artifacts usually act as factories for transformers that use them. For example, 
 may provide a ``.retriever()`` method that returns a transformer that searches the index.
 
 You can use ``pta.Artifact.load('path/to/artifact')`` to load an artifact. The function automatically
-identfies the artifact's type and initializes it:
+identifies the artifact's type and initializes it:
 
 .. code-block:: python
     :caption: Loading an Artifact

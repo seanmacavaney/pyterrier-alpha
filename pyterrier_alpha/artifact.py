@@ -63,7 +63,7 @@ class Artifact:
         Args:
             url: The URL or file path of the artifact.
             expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
-            verified against this hash and an error will be raised if the hash does not match.
+                verified against this hash and an error will be raised if the hash does not match.
 
         Returns:
             The loaded artifact.
@@ -153,9 +153,9 @@ class Artifact:
         Args:
             repo: The Hugging Face repository name.
             branch: The branch or tag of the repository to load. (Default: main). A branch can also be provided directly
-            in the repository name using "owner/repo@branch".
+                in the repository name using ``owner/repo@branch``.
             expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
-            verified against this hash and an error will be raised if the hash does not match.
+                verified against this hash and an error will be raised if the hash does not match.
         """
         if branch is not None:
             if '@' in repo:
@@ -169,7 +169,7 @@ class Artifact:
         Args:
             repo: The Hugging Face repository name.
             branch: The branch or tag of the repository to upload to. (Default: main) A branch can also be provided
-            directly in the repository name using "owner/repo@branch".
+                directly in the repository name using ``owner/repo@branch``.
             pretty_name: The human-readable name of the artifact. (Default: the repository name)
         """
         import huggingface_hub
@@ -216,7 +216,7 @@ class Artifact:
             dataset: The name of the dataset.
             variant: The variant of the dataset.
             expected_sha256: The expected SHA-256 hash of the artifact. If provided, the downloaded artifact will be
-            verified against this hash and an error will be raised if the hash does not match.
+                verified against this hash and an error will be raised if the hash does not match.
         """
         return cls.from_hf(
             hf_repo='macavaney/pyterrier-from-dataset',
