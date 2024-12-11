@@ -15,6 +15,9 @@ class MyTransformer(pt.Transformer):
     def d(self):
         pass
 
+    def transform(self, inp):
+        return inp
+
     __repr__ = transformer_repr
 
 
