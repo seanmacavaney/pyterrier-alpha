@@ -32,6 +32,8 @@ def by_query(*,
             @pta.transform.by_query(add_ranks=False)
             def transform_iter(self, inp: Iterable[Dict]) -> Iterable[Dict]:
                 # inp only contains a single query at a time.
+
+    .. versionchanged:: 0.12.0 added support for ``transform_iter``
     """
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
         is_iter = fn.__name__ == 'transform_iter'
