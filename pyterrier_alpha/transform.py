@@ -24,7 +24,7 @@ def by_query(*,
             def transform(self, inp: pd.DataFrame) -> pd.DataFrame:
                 # inp only contains a single query at a time.
 
-    It can also decoreate ``transform_iter``, which is identifed by the function name
+    It can also decorate ``transform_iter``, which is identifed by the function name
 
     Example::
 
