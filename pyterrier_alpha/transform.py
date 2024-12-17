@@ -44,7 +44,7 @@ def by_query(*,
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     batch_size=batch_size,
-                    iter=True, 
+                    iter=True,
                     verbose=verbose
                 )(inp)
             return _transform_iter
