@@ -39,13 +39,13 @@ def by_query(*,
         is_iter = fn.__name__ == 'transform_iter'
         if is_iter:
             assert not add_ranks, "add_ranks not supported for by_query with transform_iter; set add_ranks=False"
-            assert not verbose, "verbose not supported for by_query with transform_iter; set verbose=False"
             @functools.wraps(fn)
             def _transform_iter(self: pt.Transformer, inp: Iterable[Dict]) -> Iterable[Dict]:
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     batch_size=batch_size,
-                    iter=True,
+                    iter=True, 
+                    verbose=verbose
                 )(inp)
             return _transform_iter
         else:
