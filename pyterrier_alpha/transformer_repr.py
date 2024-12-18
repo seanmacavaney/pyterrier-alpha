@@ -11,6 +11,9 @@ def transformer_repr(self: Any) -> str:
 
     .. versionchanged:: 0.4.2
         Prioritize fields with ``_name`` above ``name``
+
+    .. versionchanged:: 0.12.1
+        Ignore verbose
     """
     cls = self.__class__
     init = self.__init__
@@ -24,8 +27,8 @@ def transformer_repr(self: Any) -> str:
             val = getattr(self, f'_{p.name}')
         except AttributeError:
             val = getattr(self, p.name)
-        if val != p.default:
+        if val != p.default and p.name != 'verbose':
             args.append(f'{p.name}={val!r}' if mode == 'kwd' else repr(val))
         else:
-            mode = 'kwd' # skip a paramter, force keyword mode
+            mode = 'kwd' # skip a parameter, force keyword mode
     return cls.__name__ + '(' + ', '.join(args) + ')'
