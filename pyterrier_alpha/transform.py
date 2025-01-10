@@ -34,7 +34,15 @@ def by_query(*,
                 # inp only contains a single query at a time.
 
     .. versionchanged:: 0.12.0 added support for ``transform_iter``
+    .. versionchanged:: 0.12.1 supports verbose kwarg
     """
+    from packaging.version import Version
+    kwargs = {'add_ranks': add_ranks,
+                'batch_size' : batch_size,
+                'iter' : False,
+    }
+    if verbose and Version(pt.__version__) >= Version('0.12.1'):
+        kwargs['verbose'] = verbose
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
         is_iter = fn.__name__ == 'transform_iter'
         if is_iter:
@@ -43,9 +51,7 @@ def by_query(*,
             def _transform_iter(self: pt.Transformer, inp: Iterable[Dict]) -> Iterable[Dict]:
                 return pt.apply.by_query(
                     functools.partial(fn, self),
-                    batch_size=batch_size,
-                    iter=True,
-                    verbose=verbose
+                    **kwargs
                 )(inp)
             return _transform_iter
         else:
@@ -53,10 +59,7 @@ def by_query(*,
             def _transform(self: pt.Transformer, inp: pd.DataFrame) -> pd.DataFrame:
                 return pt.apply.by_query(
                     functools.partial(fn, self),
-                    add_ranks=add_ranks,
-                    batch_size=batch_size,
-                    iter=False,
-                    verbose=verbose,
+                    **kwargs,
                 )(inp)
             return _transform
     return _wrapper
