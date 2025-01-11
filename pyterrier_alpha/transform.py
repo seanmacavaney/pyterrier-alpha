@@ -36,7 +36,7 @@ def by_query(*,
                 # inp only contains a single query at a time.
 
     .. versionchanged:: 0.12.0 added support for ``transform_iter``
-    .. versionchanged:: 0.12.1 supports verbose kwarg
+    .. versionchanged:: 0.12.3 supports verbose kwarg
     """
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
         is_iter = fn.__name__ == 'transform_iter'
