@@ -2,9 +2,11 @@
 
 import functools
 from typing import Callable, Dict, Iterable, Optional, Union
+from warnings import warn
 
 import pandas as pd
 import pyterrier as pt
+from packaging.version import Version
 
 T_TRANSFORM_FN = Callable[[pd.DataFrame], pd.DataFrame]
 T_TRANSFORM_ITER_FN = Callable[[Iterable[Dict]], Iterable[Dict]]
@@ -34,18 +36,24 @@ def by_query(*,
                 # inp only contains a single query at a time.
 
     .. versionchanged:: 0.12.0 added support for ``transform_iter``
+    .. versionchanged:: 0.12.1 supports verbose kwarg
     """
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
         is_iter = fn.__name__ == 'transform_iter'
         if is_iter:
             assert not add_ranks, "add_ranks not supported for by_query with transform_iter; set add_ranks=False"
-            assert not verbose, "verbose not supported for by_query with transform_iter; set verbose=False"
             @functools.wraps(fn)
             def _transform_iter(self: pt.Transformer, inp: Iterable[Dict]) -> Iterable[Dict]:
+                kwargs = {}
+                if Version(pt.__version__) >= Version('0.12.1'):
+                    kwargs['verbose'] = verbose
+                elif verbose:
+                    warn(f'verbose ignored for pyterrier version {pt.__version__} (minimum 0.12.1 required)')
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     batch_size=batch_size,
                     iter=True,
+                    **kwargs,
                 )(inp)
             return _transform_iter
         else:
