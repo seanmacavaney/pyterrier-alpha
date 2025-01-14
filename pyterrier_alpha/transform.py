@@ -15,9 +15,14 @@ T_TRANSFORM_ITER_FN = Callable[[Iterable[Dict]], Iterable[Dict]]
 def by_query(*,
     add_ranks: bool = True,
     batch_size: Optional[int] = None,
-    verbose: bool = False,
+    verbose: Optional[bool] = None,
 ) -> Union[Callable[[T_TRANSFORM_FN], T_TRANSFORM_FN], Callable[[T_TRANSFORM_ITER_FN], T_TRANSFORM_ITER_FN]]:
-    """Decorates a function to transform a DataFrame query-by-query.
+    """Decorates a function to transform a DataFrame query-by-query. Arguments match those in pt.apply closely.
+
+    Args:
+        verbose(bool): Whether to print progress bar. Default is to inspect the passed transformer for a verbose member variable that is True.
+        add_ranks(bool): Whether to add ranks
+        batch_size(int): whether to apply fn on batches of rows or all that are received.
 
     Example::
 
@@ -39,16 +44,20 @@ def by_query(*,
     .. versionchanged:: 0.12.3 supports verbose kwarg
     """
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
+        apply_iter_supports_verbose = Version(pt.__version__) >= Version('0.12.1')
         is_iter = fn.__name__ == 'transform_iter'
         if is_iter:
             assert not add_ranks, "add_ranks not supported for by_query with transform_iter; set add_ranks=False"
             @functools.wraps(fn)
             def _transform_iter(self: pt.Transformer, inp: Iterable[Dict]) -> Iterable[Dict]:
                 kwargs = {}
-                if Version(pt.__version__) >= Version('0.12.1'):
-                    kwargs['verbose'] = verbose
-                elif verbose:
-                    warn(f'verbose ignored for pyterrier version {pt.__version__} (minimum 0.12.1 required)')
+                if verbose: 
+                    if apply_iter_supports_verbose:
+                        kwargs['verbose'] = verbose
+                    else:
+                        warn(f'verbose ignored for pyterrier version {pt.__version__} (minimum 0.12.1 required)')
+                elif verbose is None and apply_iter_supports_verbose and hasattr(self, 'verbose') and getattr(self, 'verbose'):
+                    kwargs['verbose'] = True
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     batch_size=batch_size,
@@ -59,6 +68,9 @@ def by_query(*,
         else:
             @functools.wraps(fn)
             def _transform(self: pt.Transformer, inp: pd.DataFrame) -> pd.DataFrame:
+                nonlocal verbose
+                if verbose is None and hasattr(self, 'verbose') and getattr(self, 'verbose'):
+                    verbose = True
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     add_ranks=add_ranks,
