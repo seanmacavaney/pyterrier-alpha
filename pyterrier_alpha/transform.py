@@ -20,7 +20,8 @@ def by_query(*,
     """Decorates a function to transform a DataFrame query-by-query. Arguments match those in pt.apply closely.
 
     Args:
-        verbose(bool): Whether to print progress bar. Default is to inspect the passed transformer for a verbose member variable that is True.
+        verbose(bool): Whether to print progress bar. Default is to inspect the passed transformer for
+            a verbose member variable that is True.
         add_ranks(bool): Whether to add ranks
         batch_size(int): whether to apply fn on batches of rows or all that are received.
 
@@ -51,12 +52,13 @@ def by_query(*,
             @functools.wraps(fn)
             def _transform_iter(self: pt.Transformer, inp: Iterable[Dict]) -> Iterable[Dict]:
                 kwargs = {}
-                if verbose: 
+                if verbose:
                     if apply_iter_supports_verbose:
                         kwargs['verbose'] = verbose
                     else:
                         warn(f'verbose ignored for pyterrier version {pt.__version__} (minimum 0.12.1 required)')
-                elif verbose is None and apply_iter_supports_verbose and hasattr(self, 'verbose') and getattr(self, 'verbose'):
+                elif (verbose is None and apply_iter_supports_verbose and
+                      hasattr(self, 'verbose') and getattr(self, 'verbose')):
                     kwargs['verbose'] = True
                 return pt.apply.by_query(
                     functools.partial(fn, self),
