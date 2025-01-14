@@ -72,8 +72,8 @@ def by_query(*,
             @functools.wraps(fn)
             def _transform(self: pt.Transformer, inp: pd.DataFrame) -> pd.DataFrame:
                 nonlocal verbose
-                if verbose is None and hasattr(self, 'verbose') and getattr(self, 'verbose'):
-                    verbose = True
+                if verbose is None:
+                    verbose = hasattr(self, 'verbose') and getattr(self, 'verbose')
                 return pt.apply.by_query(
                     functools.partial(fn, self),
                     add_ranks=add_ranks,
