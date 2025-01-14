@@ -43,6 +43,7 @@ def by_query(*,
 
     .. versionchanged:: 0.12.0 added support for ``transform_iter``
     .. versionchanged:: 0.12.3 supports verbose kwarg
+    .. versionchanged:: 0.12.4 inspect the passed transformer for a verbose variable
     """
     def _wrapper(fn: Union[T_TRANSFORM_FN]) -> Union[T_TRANSFORM_FN]:
         apply_iter_supports_verbose = Version(pt.__version__) >= Version('0.12.1')
