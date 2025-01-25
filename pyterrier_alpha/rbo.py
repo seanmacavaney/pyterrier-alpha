@@ -55,5 +55,7 @@ def rbo(a: pd.DataFrame, b: pd.DataFrame, p: float = 0.99) -> Iterable[Tuple[str
     """Calculate the Rank Biased Overlap between two rankings.
 
     .. versionadded:: 0.3.0
+    .. versionchanged:: 0.12.1
+        Fixed bug where b wasn't passed properly
     """
-    return _rbo_wrapper(a, p)(b)
+    return _rbo_wrapper(a, p)(None, b)
