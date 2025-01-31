@@ -4,15 +4,18 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from pyterrier._artifact import Artifact, _hf_url_resolver
+
 import pyterrier_alpha as pta
 
-try:
-    # Artifact is in pyterrier>=0.13.0 -- load it from there instead
-    from pyterrier._artifact import Artifact, _hf_url_resolver
-except ImportError:
-    # fall back on old implementation if not available
-    from pyterrier_alpha._artifact_legacy import Artifact, _hf_url_resolver # noqa: F401, I001
-
+__all__ = [
+    'Artifact',
+    'ArtifactBuilder',
+    'ArtifactBuilderMode',
+    'from_url',
+    'from_dataset',
+    '_hf_url_resolver',
+]
 
 from_url = Artifact.from_url
 from_dataset = Artifact.from_dataset
