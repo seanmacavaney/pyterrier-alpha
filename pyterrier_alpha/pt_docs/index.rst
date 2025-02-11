@@ -31,6 +31,7 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     dataframe_builder
     rbo
     inspect
+    fusion
     io
     transform
     utils
