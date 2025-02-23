@@ -1,5 +1,6 @@
 """Validation utilities for checking the input to transformers."""
 
+import warnings
 from types import TracebackType
 from typing import List, Optional, Type
 
@@ -38,85 +39,124 @@ class InputValidationError(KeyError):
         return f'InputValidationError({self.args[0]!r}, {self.modes!r})'
 
 
+class InputValidationWarning(Warning):
+    """Warning raised when input validation fails in warn mode."""
+    pass
+
+
 def columns(inp: pd.DataFrame,
             *,
             includes: Optional[List[str]] = None,
-            excludes: Optional[List[str]] = None) -> None:
+            excludes: Optional[List[str]] = None,
+            warn: bool = False) -> None:
     """Check that the input frame has the expected columns.
 
+    Args:
+        inp: Input DataFrame to validate
+        includes: List of required columns
+        excludes: List of forbidden columns
+        warn: If True, raise warnings instead of exceptions for validation errors
+
     Raises:
-        InputValidationError: If is missing any of the `includes` columns, or has any of the `excludes` columns.
+        InputValidationError: If warn=False and validation fails
+        InputValidationWarning: If warn=True and validation fails
     """
-    with any(inp) as v:
+    with any(inp, warn=warn) as v:
         v.columns(includes=includes, excludes=excludes)
 
 
-def query_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None) -> None:
+def query_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None, warn: bool = False) -> None:
     """Check that the input frame is a valid query frame.
 
+    Args:
+        inp: Input DataFrame to validate
+        extra_columns: Additional required columns
+        warn: If True, raise warnings instead of exceptions for validation errors
+
     Raises:
-        InputValidationError: If the input frame is not a valid query frame.
+        InputValidationError: If warn=False and validation fails
+        InputValidationWarning: If warn=True and validation fails
     """
-    with any(inp) as v:
+    with any(inp, warn=warn) as v:
         v.query_frame(extra_columns)
 
 
-
-def result_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None) -> None:
+def result_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None, warn: bool = False) -> None:
     """Check that the input frame is a valid result frame.
 
+    Args:
+        inp: Input DataFrame to validate
+        extra_columns: Additional required columns
+        warn: If True, raise warnings instead of exceptions for validation errors
+
     Raises:
-        InputValidationError: If the input frame is not a valid result frame.
+        InputValidationError: If warn=False and validation fails
+        InputValidationWarning: If warn=True and validation fails
     """
-    with any(inp) as v:
+    with any(inp, warn=warn) as v:
         v.result_frame(extra_columns)
 
 
-def document_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None) -> None:
+def document_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None, warn: bool = False) -> None:
     """Check that the input frame is a valid document frame.
 
+    Args:
+        inp: Input DataFrame to validate
+        extra_columns: Additional required columns
+        warn: If True, raise warnings instead of exceptions for validation errors
+
     Raises:
-        InputValidationError: If the input frame is not a valid document frame.
+        InputValidationError: If warn=False and validation fails
+        InputValidationWarning: If warn=True and validation fails
     """
-    with any(inp) as v:
+    with any(inp, warn=warn) as v:
         v.document_frame(extra_columns)
 
 
 def columns_iter(inp: pd.DataFrame,
             *,
             includes: Optional[List[str]] = None,
-            excludes: Optional[List[str]] = None) -> None:
+            excludes: Optional[List[str]] = None,
+            warn: bool = False) -> None:
     """Check that the input frame has the expected columns.
 
+    Args:
+        inp: Input DataFrame to validate
+        includes: List of required columns
+        excludes: List of forbidden columns
+        warn: If True, raise warnings instead of exceptions for validation errors
+
     Raises:
-        InputValidationError: If is missing any of the `includes` columns, or has any of the `excludes` columns.
+        InputValidationError: If warn=False and validation fails
+        InputValidationWarning: If warn=True and validation fails
     """
-    with any_iter(inp) as v:
+    with any_iter(inp, warn=warn) as v:
         v.columns(includes=includes, excludes=excludes)
 
 
-def any(inp: pd.DataFrame) -> '_ValidationContextManager':
+def any(inp: pd.DataFrame, warn: bool = False) -> '_ValidationContextManager':
     """Create a validation context manager for a DataFrame."""
-    return _ValidationContextManager(inp)
+    return _ValidationContextManager(inp, warn=warn)
 
 
-def any_iter(inp: PeekableIter) -> '_IterValidationContextManager':
+def any_iter(inp: PeekableIter, warn: bool = False) -> '_IterValidationContextManager':
     """Create a validation context manager for an iterator."""
     if not isinstance(inp, PeekableIter):
         raise AttributeError('inp is not peekable. Run the following before calling this function.\n'
                              'inp = pta.utils.peekable(inp) # !! IMPORTANT: you must re-assign the input to peekable '
                              '(not just pass it in), otherwise you will skip the first record !!')
-    return _IterValidationContextManager(inp)
+    return _IterValidationContextManager(inp, warn=warn)
 
 
 class _ValidationContextManager:
     """Context manager for validating the input to transformers."""
-    def __init__(self, inp: pd.DataFrame):
+    def __init__(self, inp: pd.DataFrame, warn: bool = False):
         """Create a ValidationContextManager for the given DataFrame."""
         self.inp = inp
         self.mode = None
         self.attempts = 0
         self.errors = []
+        self.warn = warn
 
     def __enter__(self):
         return self
@@ -132,7 +172,11 @@ class _ValidationContextManager:
             return False # the captured exception takes priority
 
         if self.attempts > 0 and self.attempts == len(self.errors):
-            raise InputValidationError("DataFrame does not match required columns for this transformer.", self.errors)
+            message = "DataFrame does not match required columns for this transformer."
+            if self.warn:
+                warnings.warn(f"{message} {self.errors}", InputValidationWarning)
+            else:
+                raise InputValidationError(message, self.errors)
 
     def columns(self,
                 *,
@@ -178,7 +222,7 @@ class _ValidationContextManager:
 _EMPTY_ITER = object()
 
 class _IterValidationContextManager:
-    def __init__(self, inp: PeekableIter):
+    def __init__(self, inp: PeekableIter, warn: bool = False):
         try:
             self.sample_cols = set(inp.peek().keys())
         except StopIteration:
@@ -186,6 +230,7 @@ class _IterValidationContextManager:
         self.mode = None
         self.attempts = 0
         self.errors = []
+        self.warn = warn
 
     def __enter__(self):
         return self
@@ -201,7 +246,11 @@ class _IterValidationContextManager:
             return False # the captured exception takes priority
 
         if self.attempts > 0 and self.attempts == len(self.errors):
-            raise InputValidationError("Input does not match required columns for this transformer.", self.errors)
+            message = "Input does not match required columns for this transformer."
+            if self.warn:
+                warnings.warn(f"{message} {self.errors}", InputValidationWarning)
+            else:
+                raise InputValidationError(message, self.errors)
 
     def columns(self,
                 *,
