@@ -28,6 +28,49 @@ class MyIterTransformer(pt.Transformer):
 
 
 class TestTransform(unittest.TestCase):
+
+    def test_transform_by_query_verbose(self):
+        class VerboseMyTransformer(MyTransformer):
+            def __init__(self, verbose):
+                super().__init__()
+                self.verbose = verbose
+        v = VerboseMyTransformer(True)
+        v.transform(pd.DataFrame([
+            {'qid': '1', 'query': 'hello world', 'docno': '1', 'score': 1.2},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '1', 'score': 1.5},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '2', 'score': 1.1},
+        ]))
+        self.assertEqual(len(v.invocations), 2)
+
+        not_v = VerboseMyTransformer(False)
+        not_v.transform(pd.DataFrame([
+            {'qid': '1', 'query': 'hello world', 'docno': '1', 'score': 1.2},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '1', 'score': 1.5},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '2', 'score': 1.1},
+        ]))
+        self.assertEqual(len(not_v.invocations), 2)
+
+    def test_transform_by_query_verbose(self):
+        class VerboseMyTransformerIter(MyIterTransformer):
+            def __init__(self, verbose):
+                super().__init__()
+                self.verbose = verbose
+        v = VerboseMyTransformerIter(True)
+        v.transform(pd.DataFrame([
+            {'qid': '1', 'query': 'hello world', 'docno': '1', 'score': 1.2},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '1', 'score': 1.5},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '2', 'score': 1.1},
+        ]))
+        self.assertEqual(len(v.invocations), 2)
+
+        not_v = VerboseMyTransformerIter(False)
+        not_v.transform(pd.DataFrame([
+            {'qid': '1', 'query': 'hello world', 'docno': '1', 'score': 1.2},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '1', 'score': 1.5},
+            {'qid': '2', 'query': 'hello terrier', 'docno': '2', 'score': 1.1},
+        ]))
+        self.assertEqual(len(not_v.invocations), 2)
+
     def test_transform_by_query(self):
         t = MyTransformer()
         data = [

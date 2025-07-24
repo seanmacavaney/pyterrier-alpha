@@ -138,7 +138,7 @@ def transformer_outputs(
 
     .. versionadded:: 0.11.0
 
-    .. versionchanged:: 0.13.0
+    .. versionchanged:: 0.15.0
         Direct passthrough of ``pta.validate.InputValidationError``
     """
     if isinstance(transformer, ProvidesTransformerOutputs):
