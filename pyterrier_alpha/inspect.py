@@ -62,19 +62,19 @@ def artifact_type_format(
 @runtime_checkable
 class ProvidesTransformerOutputs(Protocol):
     """Protocol for transformers that provide a ``transform_outputs`` method.
-    
-    When this method is present in a pt.Transformer object, it should return a 
-    list of the output columns present given the input columns. This allows easier
-    inspection of the outputs of transformers without needing to run them. 
 
-    This method need not be present in Transformer - it is an optional extension; 
-    an alternative is that the output columns are determined by calling the transformer 
+    When this method is present in a pt.Transformer object, it should return a
+    list of the output columns present given the input columns. This allows easier
+    inspection of the outputs of transformers without needing to run them.
+
+    This method need not be present in Transformer - it is an optional extension;
+    an alternative is that the output columns are determined by calling the transformer
     with an empty DataFrame.
 
     Example::
 
         class MyRetriever(pt.Transformer):
-        
+
             def transform(self, df: pd.DataFrame) -> pd.DataFrame:
                 # ... perform retrieval ...
 
