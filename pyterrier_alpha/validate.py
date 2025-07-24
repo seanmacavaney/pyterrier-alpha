@@ -46,6 +46,9 @@ def columns(inp: Union[pd.DataFrame, List[str]],
 
     Raises:
         InputValidationError: If is missing any of the `includes` columns, or has any of the `excludes` columns.
+
+    .. versionchanged:: 0.13.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp) as v:
         v.columns(includes=includes, excludes=excludes)
@@ -56,6 +59,9 @@ def query_frame(inp: Union[pd.DataFrame, List[str]], extra_columns: Optional[Lis
 
     Raises:
         InputValidationError: If the input frame is not a valid query frame.
+
+    .. versionchanged:: 0.13.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp) as v:
         v.query_frame(extra_columns)
@@ -67,6 +73,9 @@ def result_frame(inp: Union[pd.DataFrame, List[str]], extra_columns: Optional[Li
 
     Raises:
         InputValidationError: If the input frame is not a valid result frame.
+
+    .. versionchanged:: 0.13.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp) as v:
         v.result_frame(extra_columns)
@@ -77,6 +86,9 @@ def document_frame(inp: Union[pd.DataFrame, List[str]], extra_columns: Optional[
 
     Raises:
         InputValidationError: If the input frame is not a valid document frame.
+
+    .. versionchanged:: 0.13.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp) as v:
         v.document_frame(extra_columns)

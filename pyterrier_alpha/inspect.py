@@ -73,6 +73,10 @@ class ProvidesTransformerOutputs(Protocol):
     an alternative is that the output columns are determined by calling the transformer
     with an empty ``DataFrame``.
 
+    Due to risks and maintanence burden in ensuring that ``transform`` and ``transform_outputs`` behave identically,
+    it is recommended to only implement ``transform_outputs`` when calling the transformer with an empty DataFrame to
+    inspect the behavior is undesireable, e.g., if calling the transformer is expensive.
+
     .. code-block:: python
         :caption: Example ``transform_output`` function, implementing
         :class:`~pyterrier_alpha.inspect.ProvidesTransformerOutputs`.
@@ -130,12 +134,21 @@ def transformer_outputs(
 
     Raises:
         InspectError: If the artifact's type or format could not be determined and ``strict==True``.
+        pta.validate.InputValidationError: If input validation fails in the trnsformer and ``strict==True``.
 
     .. versionadded:: 0.11.0
+
+    .. versionchanged:: 0.13.0
+        Direct passthrough of ``pta.validate.InputValidationError``
     """
     if isinstance(transformer, ProvidesTransformerOutputs):
         try:
             return transformer.transform_outputs(input_columns)
+        except pta.validate.InputValidationError:
+            if strict:
+                raise
+            else:
+                return None
         except Exception as ex:
             if strict:
                 raise InspectError(f"Cannot determine outputs for {transformer} with inputs: {input_columns}") from ex
@@ -145,6 +158,11 @@ def transformer_outputs(
     try:
         res = transformer.transform(pd.DataFrame(columns=input_columns))
         return list(res.columns)
+    except pta.validate.InputValidationError:
+        if strict:
+            raise
+        else:
+            return None
     except Exception as ex:
         if strict:
             raise InspectError(f"Cannot determine outputs for {transformer} with inputs: {input_columns}") from ex
