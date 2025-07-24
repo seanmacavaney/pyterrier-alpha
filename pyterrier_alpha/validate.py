@@ -164,6 +164,10 @@ class _ValidationContextManager:
     """Context manager for validating the input to transformers."""
     def __init__(self, inp: Union[pd.DataFrame, List[str]], warn: bool = False):
         """Create a ValidationContextManager for the given DataFrame."""
+        if isinstance(inp, pd.DataFrame):
+            self.inp_columns = list(inp.columns)
+        else:
+            self.inp_columns = inp
         self.mode = None
         self.attempts = 0
         self.errors = []
