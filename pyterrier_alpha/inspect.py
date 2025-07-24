@@ -63,27 +63,48 @@ def artifact_type_format(
 class ProvidesTransformerOutputs(Protocol):
     """Protocol for transformers that provide a ``transform_outputs`` method.
 
-    When this method is present in a pt.Transformer object, it should return a
-    list of the output columns present given the input columns. This allows easier
-    inspection of the outputs of transformers without needing to run them.
+    ``transform_outputs`` allows for inspection of the outputs of transformers without needing to run it.
+
+    When this method is present in a :class:`~pyterrier.Transformer` object, it must return a
+    list of the output columns present given the provided input columns or raise an ``InputValidationError``
+    if the inputs are not accepted by the transformer.
 
     This method need not be present in Transformer - it is an optional extension;
     an alternative is that the output columns are determined by calling the transformer
-    with an empty DataFrame.
+    with an empty ``DataFrame``.
 
-    Example::
+    .. code-block:: python
+        :caption: Example ``transform_output`` function, implementing
+        :class:`~pyterrier_alpha.inspect.ProvidesTransformerOutputs`.
 
         class MyRetriever(pt.Transformer):
 
-            def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+            def transform(self, inp: pd.DataFrame) -> pd.DataFrame:
+                pta.validate.query_frame(inp, ['query'])
                 # ... perform retrieval ...
+                # return the same columns as inp plus docno, score, and rank. E.g., using DataFrameBuilder.
 
             def transform_outputs(self, input_columns: List[str]) -> List[str]:
+                pta.validate.query_frame(input_columns, ['query'])
                 return input_columns + ['docno', 'score', 'rank']
 
     """
     def transform_outputs(self, input_columns: List[str]) -> List[str]:
-        """Returns a list of the output columns present given the ``input_columns``."""
+        """Returns a list of the output columns present given the ``input_columns``.
+
+        The method must return exactly the same output columns as ``transform`` would given the provided input
+        columns. If the input columns are not accepted by the transformer, the method should raise an
+        ``InputValidationError`` (e.g., through ``pta.validate``).
+
+        Args:
+            input_columns: A list of the columns present in the input frame.
+
+        Returns:
+            A list of the columns present in the output for this transformer given ``input_columns``.
+
+        Raises:
+            pta.validate.InputValidationError: If the input columns are not accepted by the transformer.
+        """
 
 
 def transformer_outputs(
