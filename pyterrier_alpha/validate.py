@@ -2,7 +2,7 @@
 
 import warnings
 from types import TracebackType
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Union
 
 import pandas as pd
 
@@ -60,6 +60,9 @@ def columns(inp: pd.DataFrame,
     Raises:
         InputValidationError: If warn=False and validation fails
         InputValidationWarning: If warn=True and validation fails
+
+    .. versionchanged:: 0.15.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp, warn=warn) as v:
         v.columns(includes=includes, excludes=excludes)
@@ -76,6 +79,9 @@ def query_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None, wa
     Raises:
         InputValidationError: If warn=False and validation fails
         InputValidationWarning: If warn=True and validation fails
+
+    .. versionchanged:: 0.15.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp, warn=warn) as v:
         v.query_frame(extra_columns)
@@ -92,6 +98,9 @@ def result_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None, w
     Raises:
         InputValidationError: If warn=False and validation fails
         InputValidationWarning: If warn=True and validation fails
+
+    .. versionchanged:: 0.15.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp, warn=warn) as v:
         v.result_frame(extra_columns)
@@ -108,12 +117,15 @@ def document_frame(inp: pd.DataFrame, extra_columns: Optional[List[str]] = None,
     Raises:
         InputValidationError: If warn=False and validation fails
         InputValidationWarning: If warn=True and validation fails
+
+    .. versionchanged:: 0.15.0
+        Accept ``List[str]`` inp columns
     """
     with any(inp, warn=warn) as v:
         v.document_frame(extra_columns)
 
 
-def columns_iter(inp: pd.DataFrame,
+def columns_iter(inp: PeekableIter,
             *,
             includes: Optional[List[str]] = None,
             excludes: Optional[List[str]] = None,
@@ -134,7 +146,7 @@ def columns_iter(inp: pd.DataFrame,
         v.columns(includes=includes, excludes=excludes)
 
 
-def any(inp: pd.DataFrame, warn: bool = False) -> '_ValidationContextManager':
+def any(inp: Union[pd.DataFrame, List[str]], warn: bool = False) -> '_ValidationContextManager':
     """Create a validation context manager for a DataFrame."""
     return _ValidationContextManager(inp, warn=warn)
 
@@ -150,9 +162,12 @@ def any_iter(inp: PeekableIter, warn: bool = False) -> '_IterValidationContextMa
 
 class _ValidationContextManager:
     """Context manager for validating the input to transformers."""
-    def __init__(self, inp: pd.DataFrame, warn: bool = False):
+    def __init__(self, inp: Union[pd.DataFrame, List[str]], warn: bool = False):
         """Create a ValidationContextManager for the given DataFrame."""
-        self.inp = inp
+        if isinstance(inp, pd.DataFrame):
+            self.inp_columns = list(inp.columns)
+        else:
+            self.inp_columns = inp
         self.mode = None
         self.attempts = 0
         self.errors = []
@@ -186,8 +201,8 @@ class _ValidationContextManager:
         """Check that the input frame has the ``includes`` columns and doesn't have the ``excludes`` columns."""
         includes = includes if includes is not None else []
         excludes = excludes if excludes is not None else []
-        missing_columns = set(includes) - set(self.inp.columns)
-        extra_columns = set(excludes) & set(self.inp.columns)
+        missing_columns = set(includes) - set(self.inp_columns)
+        extra_columns = set(excludes) & set(self.inp_columns)
         self.attempts += 1
 
         if missing_columns or extra_columns:
