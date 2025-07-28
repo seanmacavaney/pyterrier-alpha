@@ -17,8 +17,8 @@ class PerQueryMaxMinScore(pt.Transformer):
       fusion = (bm25 >> pta.fusion.PerQueryMaxMinScore()) +
         (dpr >> pta.fusion.PerQueryMaxMinScore())
   """
-  
-  def transform(self, topics_and_res):
+
+  def transform(self, inp: pd.DataFrame) -> pd.DataFrame:
       """ Performs per-query maxmin scaling on the input data."""
       from sklearn.preprocessing import minmax_scale
       from .validate import validate
