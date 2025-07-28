@@ -8,22 +8,24 @@ import pyterrier as pt
 import pyterrier_alpha as pta
 
 class PerQueryMaxMinScore(pt.Transformer):
-    '''
-    applies per-query maxmin scaling on the input scores. The underlying implementation uses
-    :func:`sklearn.preprocessing.minmax_scale` to scale the scores of each query independently.
+  """ Applies per-query maxmin scaling on the input scores. The underlying implementation uses
+  :func:`sklearn.preprocessing.minmax_scale` to scale the scores of each query independently.
 
-    Example::
+  Example::
 
-        from pyterrier_alpha import PerQueryMaxMinScore
-        fusion = (bm25 >> pta.fusion.PerQueryMaxMinScore()) +
-          (dpr >> pta.fusion.PerQueryMaxMinScore())
-    '''
-    
-    def transform(self, topics_and_res):
-        from sklearn.preprocessing import minmax_scale
-        topics_and_res = topics_and_res.copy()
-        topics_and_res["score"] = topics_and_res.groupby('qid')["score"].transform(lambda x: minmax_scale(x))
-        return topics_and_res
+      import pyterrier_alpha as pta
+      fusion = (bm25 >> pta.fusion.PerQueryMaxMinScore()) +
+        (dpr >> pta.fusion.PerQueryMaxMinScore())
+  """
+  
+  def transform(self, topics_and_res):
+      """ Performs per-query maxmin scaling on the input data."""
+      from sklearn.preprocessing import minmax_scale
+      from .validate import validate
+      validate.result_frame(topics_and_res, extra_columns=['score'])
+      topics_and_res = topics_and_res.copy()
+      topics_and_res["score"] = topics_and_res.groupby('qid')["score"].transform(lambda x: minmax_scale(x))
+      return topics_and_res
 
 class RRFusion(pt.Transformer):
   """Reciprocal Rank Fusion between the results from multiple transformers.
