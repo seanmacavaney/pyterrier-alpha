@@ -1,9 +1,12 @@
 """Fusion methods for combining ranking results."""
-from typing import Optional
 from collections import defaultdict
+from typing import Optional
+
 import pandas as pd
 import pyterrier as pt
+
 import pyterrier_alpha as pta
+
 
 class PerQueryMaxMinScore(pt.Transformer):
   """Applies per-query maxmin scaling on the input scores.
@@ -21,6 +24,7 @@ class PerQueryMaxMinScore(pt.Transformer):
   def transform(self, topics_and_res: pd.DataFrame) -> pd.DataFrame:
       """Performs per-query maxmin scaling on the input data."""
       from sklearn.preprocessing import minmax_scale
+
       from .validate import validate
       validate.result_frame(topics_and_res, extra_columns=['score'])
       topics_and_res = topics_and_res.copy()
