@@ -8,6 +8,29 @@ import pyterrier as pt
 import pyterrier_alpha as pta
 
 
+class PerQueryMaxMinScore(pt.Transformer):
+  """Applies per-query maxmin scaling on the input scores.
+
+  The underlying implementation uses :func:`sklearn.preprocessing.minmax_scale`
+  to scale the scores of each query independently in the range 0-1.
+
+  Example::
+
+      import pyterrier_alpha as pta
+      fusion = (bm25 >> pta.fusion.PerQueryMaxMinScore()) +
+        (dpr >> pta.fusion.PerQueryMaxMinScore())
+  """
+
+  def transform(self, topics_and_res: pd.DataFrame) -> pd.DataFrame:
+      """Performs per-query maxmin scaling on the input data."""
+      from sklearn.preprocessing import minmax_scale
+
+      from .validate import validate
+      validate.result_frame(topics_and_res, extra_columns=['score'])
+      topics_and_res = topics_and_res.copy()
+      topics_and_res["score"] = topics_and_res.groupby('qid')["score"].transform(lambda x: minmax_scale(x))
+      return topics_and_res
+
 class RRFusion(pt.Transformer):
   """Reciprocal Rank Fusion between the results from multiple transformers.
 
@@ -53,7 +76,7 @@ def rr_fusion(
     k: The constant used in the reciprocal rank computation.
     num_results: The number of results to keep for each query. If None, all results are kept.
 
-  Consider using :class:`RRFusion` if you want to use this direclty in a pipeline.
+  Consider using :class:`RRFusion` if you want to use this directly in a pipeline.
 
   .. cite.dblp:: conf/sigir/CormackCB09
   """
