@@ -24,9 +24,7 @@ class PerQueryMaxMinScore(pt.Transformer):
   def transform(self, topics_and_res: pd.DataFrame) -> pd.DataFrame:
       """Performs per-query maxmin scaling on the input data."""
       from sklearn.preprocessing import minmax_scale
-
-      from .validate import validate
-      validate.result_frame(topics_and_res, extra_columns=['score'])
+      pta.validate.result_frame(topics_and_res, extra_columns=['score'])
       topics_and_res = topics_and_res.copy()
       topics_and_res["score"] = topics_and_res.groupby('qid')["score"].transform(lambda x: minmax_scale(x))
       return topics_and_res
@@ -63,6 +61,15 @@ class RRFusion(pt.Transformer):
     """Performs the reciprocal rank fusion on the input data."""
     return rr_fusion(*[t(inp) for t in self.transformers], k=self.k, num_results=self.num_results)
 
+  def structure(self) -> list:
+    """Returns the structure of the transformer."""
+    return [{
+      'type': 'split_transformer',
+      'name': 'RRFusion',
+      'transformer': self,
+      'inner_transformers': list(self.transformers),
+    }]
+
 
 def rr_fusion(
   *results: pd.DataFrame,
@@ -89,6 +96,8 @@ def rr_fusion(
     for qid, v in r.groupby('qid'):
       all_qids[qid].append(v)
   res = []
+  if len(all_qids) == 0:
+    all_qids = {'0': results}
   for qid, qid_frames in all_qids.items():
     merged_frame = qid_frames[0]
     for next_frame in qid_frames[1:]:
