@@ -1,2 +1,1 @@
 python-terrier>=0.13.0
-colaburl

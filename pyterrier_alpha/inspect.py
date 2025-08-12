@@ -3,60 +3,21 @@ from typing import Dict, List, Optional, Protocol, Tuple, Type, Union, runtime_c
 
 import pandas as pd
 import pyterrier as pt
+from pyterrier.inspect import artifact_type_format
 
 import pyterrier_alpha as pta
+
+__all__ = [
+    'artifact_type_format',
+    'InspectError',
+    'ProvidesTransformerOutputs',
+    'transformer_outputs',
+]
 
 
 class InspectError(TypeError):
     """Base exception for inspection errors."""
     pass
-
-
-def artifact_type_format(
-    artifact: Union[Type, 'pta.Artifact'],
-    *,
-    strict: bool = True,
-) -> Optional[Tuple[str, str]]:
-    """Returns the type and format of the specified artifact.
-
-    These values are sourced by either the ``ARTIFACT_TYPE`` and ``ARTIFACT_FORMAT`` constants of the artifact, or (if
-    these are not available) by matching on the entry points.
-
-    Args:
-        artifact: The artifact to inspect.
-        strict: If True, raises an error if the type or format could not be determined. If False, returns None
-            in these cases.
-
-    Returns:
-        A tuple containing the artifact's type and format.
-
-    Raises:
-        InspectError: If the artifact's type or format could not be determined and ``strict==True``.
-    """
-    artifact_type, artifact_format = None, None
-
-    # Source #1: ARTIFACT_TYPE and ARTIFACT_FORMAT constants
-    if hasattr(artifact, 'ARTIFACT_TYPE') and hasattr(artifact, 'ARTIFACT_FORMAT'):
-        artifact_type = artifact.ARTIFACT_TYPE
-        artifact_format = artifact.ARTIFACT_FORMAT
-
-    # Source #2: entry point name
-    if artifact_type is None or artifact_format is None:
-        for entry_point in pta.io.entry_points('pyterrier.artifact'):
-            if artifact.__module__.split('.')[0] != entry_point.value.split(':')[0].split('.')[0]:
-                continue # only try loading entry points that share the same top-level module
-            entry_point_cls = entry_point.load()
-            if isinstance(artifact, type) and artifact == entry_point_cls or isinstance(artifact, entry_point_cls):
-                artifact_type, artifact_format = entry_point.name.split('.', 1)
-                break
-
-    if artifact_type is None or artifact_format is None:
-        if strict:
-            raise InspectError(f'{artifact} does not provide type and format (either as constants or via entry point)')
-        else:
-            return None
-
-    return artifact_type, artifact_format
 
 
 @runtime_checkable
