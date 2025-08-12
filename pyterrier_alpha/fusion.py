@@ -65,7 +65,7 @@ class RRFusion(pt.Transformer):
     schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
     schematic['inner_schematic'] = {
       'type': 'linked_pipelines',
-      'pipelines': [pta.schematic.transformer_schematic(t, input_columns) for t in self.transformers],
+      'pipelines': [pta.schematic.transformer_schematic(t, input_columns=input_columns) for t in self.transformers],
     }
     return schematic
 

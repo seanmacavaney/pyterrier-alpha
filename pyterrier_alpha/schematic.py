@@ -1,7 +1,7 @@
 """Tools for drawing schematic diagrams of PyTerrier transformers."""
 import html
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Protocol, Union, runtime_checkable
 
 import numpy as np
 import pyterrier as pt
@@ -10,39 +10,137 @@ import pyterrier_alpha as pta
 
 # Tools for building a structured version of a transformer schematic.
 
+@runtime_checkable
+class ProvidesSchematicTitle(Protocol):
+    """Protocol for transformers override the title in schematic diagrams.
 
-def transformer_title(transformer: pt.Transformer) -> str: # TODO: should take input_columns?
-    """Returns a title for the transformer for use in schematic diagrams."""
-    if hasattr(transformer, '_schematic_title'):
+    This protocol allows for providing a custom title for the transformer in schematic diagrams.
+    If the transformer implements this protocol, it should provide a ``_schematic_title`` method that returns
+    a string representing the title of the transformer. If the transformer does not implement this protocol,
+    the default title will be the class name of the transformer.
+
+    The ``_schematic_title`` method takes an optional ``input_columns`` argument, which is a list of input columns
+    that the transformer is expected to process. This can be used to generate a more descriptive title for
+    trnasformers that change behaviour based on the input columns.
+
+    Tht title can also be set as a string attribute of the class or instance.
+
+    The title should be very short, ideally only a word or two, as it will be used in schematic diagrams.
+    """
+    def _schematic_title(self, *, input_columns: Optional[List[str]]) -> str:
+        """Returns a short title for the transformer for use in schematic diagrams.
+
+        Args:
+            input_columns: Optional list of input columns that the transformer is expected to process. This can be used
+                to generate a more descriptive title for transformers that change behaviour based on the input columns.
+
+        Returns:
+            A short title for the transformer, suitable for use in schematic diagrams.
+        """
+
+
+def transformer_title(transformer: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> str:
+    """Returns a title for the transformer for use in schematic diagrams.
+
+    This function tries to use :method:`ProvidesSchematicTitle._schematic_title` on the transformer, but
+    if that is not available, it falls back to the class name of the transformer.
+
+    Transformer titles should be very short, ideally only a word or two, as they will be used in schematic diagrams.
+
+    Args:
+        transformer: The transformer to get the title for.
+        input_columns: Optional list of input columns that the transformer is expected to process. This can be used
+            to generate a more descriptive title for transformers that change behaviour based on the input columns.
+
+    Returns:
+        A short title for the transformer, suitable for use in schematic diagrams.
+    """
+    if isinstance(transformer, ProvidesSchematicTitle):
         if callable(transformer._schematic_title):
             return transformer._schematic_title()
         return transformer._schematic_title
     elif hasattr(transformer, '__class__') and hasattr(transformer.__class__, '__name__'):
         return transformer.__class__.__name__
-    else:
-        return str(transformer)
+    return str(transformer)
 
 
-def transformer_attributes(transformer: pt.Transformer) -> str: # TODO: should take input_columns?
-    """Returns a dictionary containing the transformer's attributes for use in schematic diagrams."""
-    if hasattr(transformer, '_schematic_attributes'):
-        return transformer._schematic_attributes()
+@runtime_checkable
+class ProvidesSchematicSettings(Protocol):
+    """Protocol for transformers that provide details about their settings in schematic diagrams.
+
+    This protocol allows for providing a dictionary of settings for the transformer in schematic diagrams.
+    If the transformer implements this protocol, it should provide a ``_schematic_settings`` method that returns
+    a dictionary representing the settings of the transformer. If the transformer does not implement this protocol,
+    an empty dictionary (i.e., no settings) will be shown.
+
+    The ``_schematic_settings`` method takes an optional ``input_columns`` argument, which is a list of input columns
+    that the transformer is expected to process. This can be used to generate settings in situations where some
+    only apply when specific inputs are given.
+    """
+    def _schematic_settings(self, *, input_columns: Optional[List[str]] = None) -> dict:
+        """Returns a dictionary of settings for the transformer.
+
+        Args:
+            input_columns: Optional list of input columns that the transformer is expected to process. This can be used
+                to generate settings in situations where some only apply when specific inputs are given.
+
+        Returns:
+            A dictionary containing the settings of the transformer, suitable for use in schematic diagrams.
+        """
+
+def transformer_settings(transformer: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> dict:
+    """Returns a dictionary containing the transformer's settings for use in schematic diagrams.
+
+    This function tries to use :method:`ProvidesSchematicSettings._schematic_settings` on the transformer, but
+    if that is not available, it returns an empty dictionary (i.e., no settings).
+
+    Args:
+        transformer: The transformer to get the settings for.
+        input_columns: Optional list of input columns that the transformer is expected to process. This can be used
+            to generate settings in situations where some only apply when specific inputs are given.
+
+    Returns:
+        A dictionary containing the settings of the transformer, suitable for use in schematic diagrams.
+    """
+    if isinstance(transformer, ProvidesSchematicSettings):
+        return transformer._schematic_settings()
     return {}
+
+
+@runtime_checkable
+class ProvidesSchematic(Protocol):
+    """Protocol for transformers that provide a schematic representation.
+
+    This protocol allows for providing a structured schematic representation of the transformer.
+    If the transformer implements this protocol, it should provide a ``_schematic`` method that returns
+    a dictionary representing the schematic of the transformer. If the transformer does not implement this protocol,
+    a default schematic will be generated.
+    """
+    def _schematic(self, *, input_columns: Optional[List[str]] = None) -> dict:
+        """Returns a structured schematic representation of the transformer.
+
+        Args:
+            input_columns: Optional list of input columns that the transformer is expected to process. This can be used
+                to generate a more descriptive schematic for transformers that change behaviour based on the input columns.
+
+        Returns:
+            A dictionary representing the schematic of the transformer, suitable for drawing schematic diagrams.
+        """
 
 
 _INFER = object()
 def transformer_schematic(
     transformer: pt.Transformer,
-    input_columns: Optional[List[str]] = _INFER,
     *,
+    input_columns: Optional[List[str]] = _INFER,
     default: bool = False,
 ) -> dict:
     """Builds a structured schematic of the trnasformer."""
-    if not default and hasattr(transformer, '_schematic'):
-        return transformer._schematic(input_columns)
+    if input_columns is _INFER:
+        input_columns = pta.inspect.transformer_inputs(transformer, single=True, strict=False)
+    if not default and isinstance(transformer, ProvidesSchematic):
+        return transformer._schematic(input_columns=input_columns)
     else:
-        if input_columns is _INFER:
-            input_columns = pta.inspect.transformer_inputs(transformer, single=True, strict=False)
         if input_columns is not None:
             output_columns = pta.inspect.transformer_outputs(transformer, input_columns, strict=False)
         else:
@@ -50,8 +148,8 @@ def transformer_schematic(
         result = {
             'type': 'transformer',
             'transformer': transformer,
-            'title': transformer_title(transformer), # TODO: should take input_columns?
-            'attributes': transformer_attributes(transformer), # TODO: should take input_columns?
+            'title': transformer_title(transformer, input_columns=input_columns),
+            'settings': transformer_settings(transformer, input_columns=input_columns),
             'input_columns': input_columns,
             'output_columns': output_columns,
         }
@@ -86,11 +184,11 @@ pt.rewrite.SequentialDependence._schematic_title = 'SDM'
 def _compose_schematic(self: pt.Transformer, input_columns: Optional[List[str]] = None) -> dict:
     """Builds a schematic of the Compose transformer."""
     if len(self) == 1:
-        return transformer_schematic(self[0], input_columns)
+        return transformer_schematic(self[0], input_columns=input_columns)
     pipeline = []
     columns = input_columns
     for transformer in self:
-        schematic = transformer_schematic(transformer, columns)
+        schematic = transformer_schematic(transformer, input_columns=columns)
         pipeline.append(schematic)
         columns = schematic['output_columns']
     return {
@@ -103,14 +201,6 @@ def _compose_schematic(self: pt.Transformer, input_columns: Optional[List[str]] 
     }
 pt.Compose._schematic = _compose_schematic
 
-# def _feature_union_schematic(self, input_columns: Optional[list[str]] = None) -> dict:
-#     schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
-#     schematic['inner_schematic'] = {
-#       'type': 'parallel',
-#       'pipelines': [pta.schematic.transformer_schematic(t) for t in self._transformers],
-#     }
-#     return schematic
-# pt._ops.FeatureUnion._schematic = _feature_union_schematic
 
 
 
@@ -435,11 +525,25 @@ _js = '''
 })();
 '''
 
-def draw_html_transformer(transformer: pt.Transformer) -> str:
-    """Draws a transformer as an HTML schematic."""
-    return draw_html_schematic(transformer_schematic(transformer))
 
-draw = draw_html_transformer
+def draw(transformer: Union[pt.Transformer, dict]) -> str:
+    """Draws a transformer as an HTML schematic.
+
+    If the transformer is already a structured schematic, it will be drawn directly.
+    Otherwise, it will first convert the transformer to a structured schematic and then draw it.
+
+    Args:
+        transformer: The transformer to draw, or a structured schematic dictionary.
+
+    Returns:
+        An HTML string representing the schematic of the transformer.
+    """
+    if isinstance(transformer, dict):
+        schematic = transformer
+    else:
+        schematic = transformer_schematic(transformer)
+    return draw_html_schematic(schematic)
+
 
 def draw_html_schematic(schematic: dict) -> str:
     """Draws a structured schematic as an HTML representation."""
@@ -491,9 +595,9 @@ def _draw_html_schematic(schematic: dict, *, mode: str = 'outer') -> None:
                 if cls_name.startswith('pyterrier.'):
                     cls_name = 'pt.' + cls_name[len('pyterrier.'):]
                 attrs = ''
-                if record['attributes']:
+                if record['settings']:
                     attr_rows = []
-                    for key, value in record['attributes'].items():
+                    for key, value in record['settings'].items():
                         attr_rows.append(f'<tr><th>{html.escape(key)}</th><td>{html.escape(str(value))}</td></tr>')
                     attrs = f'<table class="df-columns">{"".join(attr_rows)}</table>'
                 infobox = f'''
@@ -622,4 +726,4 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
 
 
 pt.Transformer._repr_html_ = draw
-pt.terrier.rewrite.RM3._schematic_attributes = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
+pt.terrier.rewrite.RM3._schematic_settings = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
