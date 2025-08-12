@@ -81,6 +81,15 @@ def _compose_diagram(self: pt.Transformer, input_columns: Optional[List[str]] = 
     }
 pt.Compose._diagram = _compose_diagram
 
+def _feature_union_diagram(self, input_columns: Optional[list[str]] = None) -> dict:
+    diagram = pta.diagram.transformer_diagram(self, input_columns=input_columns, default=True)
+    diagram['inner_diagram'] = {
+      'type': 'parallel',
+      'pipelines': [pta.diagram.transformer_diagram(t) for t in self._transformers],
+    }
+    return diagram
+pt._ops.FeatureUnion._diagram = _feature_union_diagram
+
 
 
 # Tools for converting the structured diagrams to html
