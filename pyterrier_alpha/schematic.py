@@ -128,7 +128,6 @@ _css = '''
     position: absolute;
     top: 0;
     left: 0;
-    width: 256px;
     max-height: 100%;
     border: 1px solid black;
     overflow-y: auto;
@@ -138,6 +137,8 @@ _css = '''
     opacity: 0.9;
     margin: 4px;
     font-size: 0.8em;
+    max-width: 360px;
+    min-width: 128px;
 }
 #ID .infobox-item {
     display: none;
