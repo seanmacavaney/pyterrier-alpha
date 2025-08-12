@@ -47,7 +47,7 @@ def transformer_schematic(
             output_columns = pta.inspect.transformer_outputs(transformer, input_columns, strict=False)
         else:
             output_columns = None
-        return {
+        result = {
             'type': 'transformer',
             'transformer': transformer,
             'title': transformer_title(transformer), # TODO: should take input_columns?
@@ -55,6 +55,28 @@ def transformer_schematic(
             'input_columns': input_columns,
             'output_columns': output_columns,
         }
+        subtransformers = pta.inspect.subtransformers(transformer)
+        if subtransformers:
+            labeled_pipelines = []
+            for key, value in subtransformers.items():
+                if isinstance(value, list):
+                    for i, v in enumerate(value):
+                        labeled_pipelines.append({
+                            'type': 'labeled_pipeline',
+                            'label': f'{key}[{i}]',
+                            'pipeline': transformer_schematic(v),
+                        })
+                else:
+                    labeled_pipelines.append({
+                        'type': 'labeled_pipeline',
+                        'label': key,
+                        'pipeline': transformer_schematic(value),
+                    })
+            result['inner_schematic'] = {
+                'type': 'labeled_pipelines',
+                'pipelines': labeled_pipelines,
+            }
+        return result
 
 # A few temporary shims:
 #   (these will need to be moved to the approprate place and/or implemented correctly)
@@ -81,14 +103,14 @@ def _compose_schematic(self: pt.Transformer, input_columns: Optional[List[str]] 
     }
 pt.Compose._schematic = _compose_schematic
 
-def _feature_union_schematic(self, input_columns: Optional[list[str]] = None) -> dict:
-    schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
-    schematic['inner_schematic'] = {
-      'type': 'parallel',
-      'pipelines': [pta.schematic.transformer_schematic(t) for t in self._transformers],
-    }
-    return schematic
-pt._ops.FeatureUnion._schematic = _feature_union_schematic
+# def _feature_union_schematic(self, input_columns: Optional[list[str]] = None) -> dict:
+#     schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
+#     schematic['inner_schematic'] = {
+#       'type': 'parallel',
+#       'pipelines': [pta.schematic.transformer_schematic(t) for t in self._transformers],
+#     }
+#     return schematic
+# pt._ops.FeatureUnion._schematic = _feature_union_schematic
 
 
 
@@ -271,6 +293,9 @@ _css = '''
     top: -10px;
     left: 6px;
 }
+#ID .transformer .arr-input {
+    margin-left: 8px;
+}
 
 .inner-schematic {
     display: flex;
@@ -430,7 +455,7 @@ def draw_html_schematic(schematic: dict) -> str:
     '''
 
 
-def _draw_html_schematic(schematic: dict, inner=False) -> None:
+def _draw_html_schematic(schematic: dict, *, mode: str = 'outer') -> None:
     if schematic['type'] == 'transformer':
         return _draw_html_schematic({
             'type': 'pipeline',
@@ -439,14 +464,16 @@ def _draw_html_schematic(schematic: dict, inner=False) -> None:
             'output_columns': schematic.get('output_columns'),
             'title': None,
             'pipeline': [schematic],
-        }, inner=inner)
+        }, mode=mode)
     if schematic['type'] == 'pipeline':
         result = '<div class="pipeline">'
-        if not inner:
+        if mode == 'outer':
             result += '<div class="io-label">Input</div>'
-            result += f'<div class="hline arr arr-input">{_draw_df_html(schematic["input_columns"], None)}</div>'
-        else:
+            result += f'<div class="hline arr arr-input">{_draw_df_html(schematic["input_columns"])}</div>'
+        elif mode == 'inner_linked':
             result += '<div class="hline arr arr-inner" style="width: 16px;"></div>'
+        elif mode == 'inner_labeled':
+            result += f'<div class="hline arr arr-input">{_draw_df_html(schematic["input_columns"])}</div>'
         columns = schematic["input_columns"]
         for i, record in enumerate(schematic['pipeline']):
             assert record['input_columns'] == columns
@@ -477,25 +504,25 @@ def _draw_html_schematic(schematic: dict, inner=False) -> None:
                 '''
                 infobox_attr = f'data-infobox="id-{uid}"'
             if 'inner_schematic' in record:
-                if record['inner_schematic']['type'] == 'parallel':
+                if record['inner_schematic']['type'] == 'linked_pipelines':
                     result += f'''
                     <div class="transformer parallel-scaffold" {infobox_attr}>
                         {infobox}
                         <div class="hline"></div>
                         <div class="transformer-title">{html.escape(record["title"])}</div>
-                        <div class="inner-schematic">
-                            {_draw_html_schematic(record["inner_schematic"], inner=True)}
+                        <div class="inner-schematic inner-linked">
+                            {_draw_html_schematic(record["inner_schematic"], mode='inner_linked')}
                         </div>
                         <div class="hline arr"></div>
                     </div>
                     '''
-                else:
+                elif record['inner_schematic']['type'] == 'labeled_pipelines':
                     result += f'''
                     <div class="transformer" {infobox_attr}>
                         {infobox}
                         <div class="transformer-title">{html.escape(record["title"])}</div>
-                        <div class="inner-schematic">
-                            {_draw_html_schematic(record["inner_schematic"], inner=True)}
+                        <div class="inner-schematic inner-labeled">
+                            {_draw_html_schematic(record["inner_schematic"], mode='inner_labeled')}
                         </div>
                     </div>
                     '''
@@ -509,22 +536,31 @@ def _draw_html_schematic(schematic: dict, inner=False) -> None:
             if i != len(schematic['pipeline']) - 1:
                 result += f'<div class="hline arr arr-inner">{_draw_df_html(record["output_columns"], record["input_columns"])}</div>'
             columns = record['output_columns']
-        if not inner:
+        if mode == 'outer':
             result += f'<div class="hline arr arr-output">{_draw_df_html(schematic["output_columns"], schematic["pipeline"][-1]["input_columns"])}</div>'
             result += '<div class="io-label">Output</div>'
-        else:
+        elif mode == 'inner_linked':
             result += f'<div class="hline" style="flex-grow: 1;">{_draw_df_html(schematic["output_columns"], schematic["pipeline"][-1]["input_columns"])}</div>'
+        elif mode == 'inner_labeled':
+            result += f'<div class="hline arr arr-output">{_draw_df_html(schematic["output_columns"], schematic["pipeline"][-1]["input_columns"])}</div>'
         result += '</div>'
         return result
-    if schematic['type'] == 'parallel':
+    if schematic['type'] == 'linked_pipelines':
         result = ''
         for i, record in enumerate(schematic['pipelines']):
-            result += '<div class="parallel-item"><div class="vline"></div>' + _draw_html_schematic(record, inner=inner) + '<div class="vline"></div></div>'
+            result += '<div class="parallel-item"><div class="vline"></div>' + _draw_html_schematic(record, mode=mode) + '<div class="vline"></div></div>'
         return result
+    if schematic['type'] == 'labeled_pipelines':
+        result = ''
+        for pipeline in schematic['pipelines']:
+            result += _draw_html_schematic(pipeline, mode=mode)
+        return result
+    if schematic['type'] == 'labeled_pipeline':
+        return f'<div><b>{schematic["label"]}:</b></div>' + _draw_html_schematic(schematic['pipeline'], mode=mode)
     return result + '</div>'
 
 
-def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]]) -> str:
+def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]] = None) -> str:
     """Draws a DataFrame as an HTML table."""
     df_label = '?'
     df_label_long = 'Unknown Frame'

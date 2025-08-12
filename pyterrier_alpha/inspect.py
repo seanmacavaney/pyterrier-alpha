@@ -1,5 +1,5 @@
 """Module for inspecting pyterrier objects."""
-from typing import List, Optional, Protocol, Tuple, Type, Union, runtime_checkable
+from typing import Dict, List, Optional, Protocol, Tuple, Type, Union, runtime_checkable
 
 import pandas as pd
 import pyterrier as pt
@@ -181,6 +181,7 @@ def transformer_inputs(
     try:
         transformer(pd.DataFrame())
     except pta.validate.InputValidationError as ex:
+        print(ex)
         return ex.modes[0].missing_columns
     except:
         for mode in [
@@ -192,3 +193,50 @@ def transformer_inputs(
                 return mode
             except:
                 continue
+
+
+@runtime_checkable
+class ProvidesSubtransformers(Protocol):
+    """Protocol for transformers that provide a ``subtransformers`` method.
+
+    ``subtransformers`` allows for identifying subtransformers of a transformer without needing to traverse
+    its attributes manually.
+
+    When this method is present in a :class:`~pyterrier.Transformer` object, it must return a
+    dict where the keys are the names of the subtransformers and the values are the subtransformers (or list
+    of subtransformers) themselves.
+
+    This method need not be present in Transformer - it is an optional extension.
+    """
+    def subtransformers(self) -> Dict[str, Union[pt.Transformer, List[pt.Transformer]]]:
+        """Returns a dictionary of subtransformers for the transformer.
+
+        The method must return a dictionary where the keys are the names of the subtransformers and the values are
+        the subtransformers themselves. If the transformer does not have any subtransformers, an empty dictionary
+        should be returned.
+        """
+
+
+def subtransformers(transformer: pt.Transformer) -> Dict[str, Union[pt.Transformer, List[pt.Transformer]]]:
+    """Returns a dictionary of subtransformers for the given transformer.
+
+    This method inspects the transformer and returns a dictionary where the keys are the names of the subtransformers
+    and the values are the subtransformers themselves. If the transformer does not have any subtransformers, an empty
+    dictionary is returned.
+
+    Args:
+        transformer: The transformer to inspect.
+
+    Returns:
+        A dictionary of the provided transformer's subtransformers.
+    """
+    if isinstance(transformer, ProvidesSubtransformers):
+        return transformer.subtransformers()
+    result = {}
+    for attr, value in transformer.__dict__.items():
+        if isinstance(value, pt.Transformer):
+            result[attr] = value
+        elif ((isinstance(value, list) or isinstance(value, tuple)) and
+              len(value) > 0 and isinstance(value[0], pt.Transformer)):
+            result[attr] = list(value)
+    return result
