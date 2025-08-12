@@ -296,8 +296,11 @@ _css = '''
 #ID .transformer .arr-input {
     margin-left: 8px;
 }
+#ID .transformer .arr-output {
+    margin-right: 4px;
+}
 
-.inner-schematic {
+#ID .inner-schematic {
     display: flex;
     flex-direction: column;
 }
