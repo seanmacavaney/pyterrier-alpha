@@ -3,6 +3,7 @@ import html
 import uuid
 from typing import List, Optional
 
+import numpy as np
 import pyterrier as pt
 
 import pyterrier_alpha as pta
@@ -546,14 +547,23 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
         for col in columns:
             col_info = pta.documentation.column_info(col) or {}
             col_desc = ''
+            type_name = ''
+            if 'type' in col_info:
+                type_name = str(col_info['type'])
+                if col_info['type'] == np.array:
+                    type_name = 'np.array'
+                elif hasattr(col_info['type'], '__name__'):
+                    type_name = col_info['type'].__name__
+                type_name = f'<span style="font-family: monospace;">{html.escape(type_name)}</span>'
             if 'phrase' in col_info:
-                col_desc += f'<i>({html.escape(col_info["phrase"])})</i>'
+                col_desc += f'<i>({html.escape(col_info["phrase"])})</i> '
             if 'short_desc' in col_info:
-                col_desc += f' {html.escape(col_info["short_desc"])}'
+                col_desc += f'{html.escape(col_info["short_desc"])} '
             is_added = prev_columns and col not in prev_columns
             column_rows.append(f'''
                 <tr class="{"add" if is_added else ""}">
                     <th>{html.escape(col)}</th>
+                    <td>{type_name}</td>
                     <td>{col_desc}</td>
                 </tr>
             ''')
