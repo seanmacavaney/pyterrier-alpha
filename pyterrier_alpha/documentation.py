@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import pyterrier as pt
 import requests
 
@@ -85,34 +86,47 @@ def column_info(column: str) -> Optional[dict]:
         return {
             'phrase': 'Query ID',
             'short_desc': 'Unique ID of query in frame',
+            'type': str,
         }
     if column == 'docno':
         return {
             'phrase': 'External Document ID',
             'short_desc': 'Unique string ID of document in collection',
+            'type': str,
         }
     if column == 'docid':
         return {
             'phrase': 'Internal Document ID',
             'short_desc': 'Unique integer ID of document in a specific index',
+            'type': int,
         }
     if column == 'score':
         return {
-            'short_desc': 'Ranking score of document to query (higher=better)'
+            'short_desc': 'Ranking score of document to query (higher=better)',
+            'type': float,
         }
     if column == 'rank':
         return {
-            'short_desc': 'Ranking order of document to query (lower=better)'
+            'short_desc': 'Ranking order of document to query (lower=better)',
+            'type': int,
         }
     if column == 'query':
         return {
             'short_desc': 'Query text',
+            'type': str,
         }
     if re.match(r'^query_[0-9]+$', column):
         return {
             'short_desc': 'Stashed query text',
+            'type': str,
         }
     if column == 'text':
         return {
             'short_desc': 'Document text',
+            'type': str,
+        }
+    if column == 'features':
+        return {
+            'short_desc': 'Feature array for learning-to-rank',
+            'type': np.array,
         }
