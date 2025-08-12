@@ -61,14 +61,13 @@ class RRFusion(pt.Transformer):
     """Performs the reciprocal rank fusion on the input data."""
     return rr_fusion(*[t(inp) for t in self.transformers], k=self.k, num_results=self.num_results)
 
-  def structure(self) -> list:
-    """Returns the structure of the transformer."""
-    return [{
-      'type': 'split_transformer',
-      'name': 'RRFusion',
-      'transformer': self,
-      'inner_transformers': list(self.transformers),
-    }]
+  def _diagram(self, input_columns: Optional[list[str]] = None) -> dict:
+    diagram = pta.diagram.transformer_diagram(self, input_columns=input_columns, default=True)
+    diagram['inner_diagram'] = {
+      'type': 'parallel',
+      'pipelines': [pta.diagram.transformer_diagram(t) for t in self.transformers],
+    }
+    return diagram
 
 
 def rr_fusion(
