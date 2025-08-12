@@ -1,6 +1,5 @@
 """Tools for drawing diagrams of PyTerrier transformers and pipelines."""
 import html
-import re
 import uuid
 from typing import List, Optional
 
