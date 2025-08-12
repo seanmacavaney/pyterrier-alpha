@@ -32,7 +32,6 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     rbo
     inspect
     fusion
-    io
     transform
     utils
     validate
