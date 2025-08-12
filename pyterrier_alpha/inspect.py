@@ -12,6 +12,9 @@ __all__ = [
     'InspectError',
     'ProvidesTransformerOutputs',
     'transformer_outputs',
+    'transformer_inputs',
+    'ProvidesSubtransformers',
+    'subtransformers',
 ]
 
 
@@ -180,6 +183,10 @@ class ProvidesSubtransformers(Protocol):
 
 def subtransformers(transformer: pt.Transformer) -> Dict[str, Union[pt.Transformer, List[pt.Transformer]]]:
     """Returns a dictionary of subtransformers for the given transformer.
+
+    A subtransformer is a transformer that is used by another transformer to complete its task. Examples
+    include those used by caches (e.g., ``scorer`` in :class:`pyterrier_caching.ScorerCache`) and the list
+    of transformers that are used by a :class:`pyterrier_alpha.fusion.RRFusion` transformer.
 
     This method inspects the transformer and returns a dictionary where the keys are the names of the subtransformers
     and the values are the subtransformers themselves. If the transformer does not have any subtransformers, an empty
