@@ -21,7 +21,6 @@ __all__ = [
     'RBO',
     'artifact',
     'colab',
-    'diagram',
     'documentation',
     'fusion',
     'inspect',

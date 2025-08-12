@@ -1,4 +1,4 @@
-"""Tools for drawing diagrams of PyTerrier transformers and pipelines."""
+"""Tools for drawing schematic diagrams of PyTerrier transformers."""
 import html
 import uuid
 from typing import List, Optional
@@ -7,15 +7,15 @@ import pyterrier as pt
 
 import pyterrier_alpha as pta
 
-# Tools for building a structured version of a transformer diagram.
+# Tools for building a structured version of a transformer schematic.
 
 
 def transformer_title(transformer: pt.Transformer) -> str: # TODO: should take input_columns?
-    """Returns a title for the transformer for use in diagrams."""
-    if hasattr(transformer, '_diagram_title'):
-        if callable(transformer._diagram_title):
-            return transformer._diagram_title()
-        return transformer._diagram_title
+    """Returns a title for the transformer for use in schematic diagrams."""
+    if hasattr(transformer, '_schematic_title'):
+        if callable(transformer._schematic_title):
+            return transformer._schematic_title()
+        return transformer._schematic_title
     elif hasattr(transformer, '__class__') and hasattr(transformer.__class__, '__name__'):
         return transformer.__class__.__name__
     else:
@@ -23,22 +23,22 @@ def transformer_title(transformer: pt.Transformer) -> str: # TODO: should take i
 
 
 def transformer_attributes(transformer: pt.Transformer) -> str: # TODO: should take input_columns?
-    """Returns a dictionary containing the transformer's attributes for use in diagrams."""
-    if hasattr(transformer, '_diagram_attributes'):
-        return transformer._diagram_attributes()
+    """Returns a dictionary containing the transformer's attributes for use in schematic diagrams."""
+    if hasattr(transformer, '_schematic_attributes'):
+        return transformer._schematic_attributes()
     return {}
 
 
 _INFER = object()
-def transformer_diagram(
+def transformer_schematic(
     transformer: pt.Transformer,
     input_columns: Optional[List[str]] = _INFER,
     *,
     default: bool = False,
 ) -> dict:
-    """Builds a structured diagram of the trnasformer."""
-    if not default and hasattr(transformer, '_diagram'):
-        return transformer._diagram(input_columns)
+    """Builds a structured schematic of the trnasformer."""
+    if not default and hasattr(transformer, '_schematic'):
+        return transformer._schematic(input_columns)
     else:
         if input_columns is _INFER:
             input_columns = pta.inspect.transformer_inputs(transformer, single=True, strict=False)
@@ -55,21 +55,21 @@ def transformer_diagram(
             'output_columns': output_columns,
         }
 
-# A few temporary shims related to building diagrams:
+# A few temporary shims:
 #   (these will need to be moved to the approprate place and/or implemented correctly)
 
-pt.terrier.Retriever._diagram_title = 'BM25'
-pt.rewrite.SequentialDependence._diagram_title = 'SDM'
-def _compose_diagram(self: pt.Transformer, input_columns: Optional[List[str]] = None) -> dict:
-    """Builds a structured diagram of the Compose transformer."""
+pt.terrier.Retriever._schematic_title = 'BM25'
+pt.rewrite.SequentialDependence._schematic_title = 'SDM'
+def _compose_schematic(self: pt.Transformer, input_columns: Optional[List[str]] = None) -> dict:
+    """Builds a schematic of the Compose transformer."""
     if len(self) == 1:
-        return transformer_diagram(self[0], input_columns)
+        return transformer_schematic(self[0], input_columns)
     pipeline = []
     columns = input_columns
     for transformer in self:
-        diagram = transformer_diagram(transformer, columns)
-        pipeline.append(diagram)
-        columns = diagram['output_columns']
+        schematic = transformer_schematic(transformer, columns)
+        pipeline.append(schematic)
+        columns = schematic['output_columns']
     return {
         'type': 'pipeline',
         'transformer': self,
@@ -78,20 +78,20 @@ def _compose_diagram(self: pt.Transformer, input_columns: Optional[List[str]] = 
         'title': None,
         'pipeline': pipeline,
     }
-pt.Compose._diagram = _compose_diagram
+pt.Compose._schematic = _compose_schematic
 
-def _feature_union_diagram(self, input_columns: Optional[list[str]] = None) -> dict:
-    diagram = pta.diagram.transformer_diagram(self, input_columns=input_columns, default=True)
-    diagram['inner_diagram'] = {
+def _feature_union_schematic(self, input_columns: Optional[list[str]] = None) -> dict:
+    schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
+    schematic['inner_schematic'] = {
       'type': 'parallel',
-      'pipelines': [pta.diagram.transformer_diagram(t) for t in self._transformers],
+      'pipelines': [pta.schematic.transformer_schematic(t) for t in self._transformers],
     }
-    return diagram
-pt._ops.FeatureUnion._diagram = _feature_union_diagram
+    return schematic
+pt._ops.FeatureUnion._schematic = _feature_union_schematic
 
 
 
-# Tools for converting the structured diagrams to html
+# Tools for converting the schematic diagrams to html
 
 _css = '''
 #ID {
@@ -271,7 +271,7 @@ _css = '''
     left: 6px;
 }
 
-.inner-diagram {
+.inner-schematic {
     display: flex;
     flex-direction: column;
 }
@@ -294,7 +294,7 @@ _css = '''
 #ID .parallel-scaffold > .transformer-title {
     grid-area: title;
 }
-#ID .parallel-scaffold > .inner-diagram {
+#ID .parallel-scaffold > .inner-schematic {
     grid-area: body;
 }
 
@@ -406,20 +406,20 @@ _js = '''
 '''
 
 def draw_html_transformer(transformer: pt.Transformer) -> str:
-    """Draws a transformer as an HTML diagram."""
-    return draw_html_diagram(transformer_diagram(transformer))
+    """Draws a transformer as an HTML schematic."""
+    return draw_html_schematic(transformer_schematic(transformer))
 
 draw = draw_html_transformer
 
-def draw_html_diagram(diagram: dict) -> str:
-    """Draws a structured diagram as an HTML representation."""
+def draw_html_schematic(schematic: dict) -> str:
+    """Draws a structured schematic as an HTML representation."""
     uid = str(uuid.uuid4())
     css = _css.replace('#ID', f'#id-{uid}')
     js = _js.replace('#ID', f'#id-{uid}')
     return f'''
     <div id="id-{uid}">
         <style>{css}</style>
-        {_draw_html_diagram(diagram)}
+        {_draw_html_schematic(schematic)}
         <div class="infobox">
             <div class="infobox-title"></div>
             <div class="infobox-body"></div>
@@ -429,25 +429,25 @@ def draw_html_diagram(diagram: dict) -> str:
     '''
 
 
-def _draw_html_diagram(diagram: dict, inner=False) -> None:
-    if diagram['type'] == 'transformer':
-        return _draw_html_diagram({
+def _draw_html_schematic(schematic: dict, inner=False) -> None:
+    if schematic['type'] == 'transformer':
+        return _draw_html_schematic({
             'type': 'pipeline',
-            'transformer': diagram['transformer'],
-            'input_columns': diagram.get('input_columns'),
-            'output_columns': diagram.get('output_columns'),
+            'transformer': schematic['transformer'],
+            'input_columns': schematic.get('input_columns'),
+            'output_columns': schematic.get('output_columns'),
             'title': None,
-            'pipeline': [diagram],
+            'pipeline': [schematic],
         }, inner=inner)
-    if diagram['type'] == 'pipeline':
+    if schematic['type'] == 'pipeline':
         result = '<div class="pipeline">'
         if not inner:
             result += '<div class="io-label">Input</div>'
-            result += f'<div class="hline arr arr-input">{_draw_df_html(diagram["input_columns"], None)}</div>'
+            result += f'<div class="hline arr arr-input">{_draw_df_html(schematic["input_columns"], None)}</div>'
         else:
             result += '<div class="hline arr arr-inner" style="width: 16px;"></div>'
-        columns = diagram["input_columns"]
-        for i, record in enumerate(diagram['pipeline']):
+        columns = schematic["input_columns"]
+        for i, record in enumerate(schematic['pipeline']):
             assert record['input_columns'] == columns
             assert record['type'] == 'transformer'
             uid = str(uuid.uuid4())
@@ -475,15 +475,15 @@ def _draw_html_diagram(diagram: dict, inner=False) -> None:
                 </div>
                 '''
                 infobox_attr = f'data-infobox="id-{uid}"'
-            if 'inner_diagram' in record:
-                if record['inner_diagram']['type'] == 'parallel':
+            if 'inner_schematic' in record:
+                if record['inner_schematic']['type'] == 'parallel':
                     result += f'''
                     <div class="transformer parallel-scaffold" {infobox_attr}>
                         {infobox}
                         <div class="hline"></div>
                         <div class="transformer-title">{html.escape(record["title"])}</div>
-                        <div class="inner-diagram">
-                            {_draw_html_diagram(record["inner_diagram"], inner=True)}
+                        <div class="inner-schematic">
+                            {_draw_html_schematic(record["inner_schematic"], inner=True)}
                         </div>
                         <div class="hline arr"></div>
                     </div>
@@ -493,8 +493,8 @@ def _draw_html_diagram(diagram: dict, inner=False) -> None:
                     <div class="transformer" {infobox_attr}>
                         {infobox}
                         <div class="transformer-title">{html.escape(record["title"])}</div>
-                        <div class="inner-diagram">
-                            {_draw_html_diagram(record["inner_diagram"], inner=True)}
+                        <div class="inner-schematic">
+                            {_draw_html_schematic(record["inner_schematic"], inner=True)}
                         </div>
                     </div>
                     '''
@@ -505,20 +505,20 @@ def _draw_html_diagram(diagram: dict, inner=False) -> None:
                     <div class="transformer-title">{html.escape(record["title"])}</div>
                 </div>
                 '''
-            if i != len(diagram['pipeline']) - 1:
+            if i != len(schematic['pipeline']) - 1:
                 result += f'<div class="hline arr arr-inner">{_draw_df_html(record["output_columns"], record["input_columns"])}</div>'
             columns = record['output_columns']
         if not inner:
-            result += f'<div class="hline arr arr-output">{_draw_df_html(diagram["output_columns"], diagram["pipeline"][-1]["input_columns"])}</div>'
+            result += f'<div class="hline arr arr-output">{_draw_df_html(schematic["output_columns"], schematic["pipeline"][-1]["input_columns"])}</div>'
             result += '<div class="io-label">Output</div>'
         else:
-            result += f'<div class="hline" style="flex-grow: 1;">{_draw_df_html(diagram["output_columns"], diagram["pipeline"][-1]["input_columns"])}</div>'
+            result += f'<div class="hline" style="flex-grow: 1;">{_draw_df_html(schematic["output_columns"], schematic["pipeline"][-1]["input_columns"])}</div>'
         result += '</div>'
         return result
-    if diagram['type'] == 'parallel':
+    if schematic['type'] == 'parallel':
         result = ''
-        for i, record in enumerate(diagram['pipelines']):
-            result += '<div class="parallel-item"><div class="vline"></div>' + _draw_html_diagram(record, inner=inner) + '<div class="vline"></div></div>'
+        for i, record in enumerate(schematic['pipelines']):
+            result += '<div class="parallel-item"><div class="vline"></div>' + _draw_html_schematic(record, inner=inner) + '<div class="vline"></div></div>'
         return result
     return result + '</div>'
 
@@ -572,4 +572,4 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
 
 
 pt.Transformer._repr_html_ = draw
-pt.terrier.rewrite.RM3._diagram_attributes = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
+pt.terrier.rewrite.RM3._schematic_attributes = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
