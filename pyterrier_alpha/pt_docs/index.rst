@@ -34,5 +34,3 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     fusion
     io
     transform
-    utils
-    validate
