@@ -4,12 +4,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import pyterrier as pt
 from pyterrier._artifact import Artifact, _hf_url_resolver
 
-import pyterrier_alpha as pta
-
 __all__ = [
-    'Artifact',
     'ArtifactBuilder',
     'ArtifactBuilderMode',
     'from_url',
@@ -51,7 +49,7 @@ class ArtifactBuilder:
         self.path = Path(path or artifact.path)
 
         if type is None or format is None:
-            type, format = pta.inspect.artifact_type_format(artifact)
+            type, format = pt.inspect.artifact_type_format(artifact)
 
         if package_hint is None:
             if hasattr(artifact, 'ARTIFACT_PACKAGE_HINT'):
