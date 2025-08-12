@@ -1,5 +1,5 @@
 """Module for inspecting pyterrier objects."""
-from typing import Dict, List, Optional, Protocol, Tuple, Type, Union, runtime_checkable
+from typing import Dict, List, Optional, Protocol, Union, runtime_checkable
 
 import pandas as pd
 import pyterrier as pt
