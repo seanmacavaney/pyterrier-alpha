@@ -85,19 +85,19 @@ def column_info(column: str) -> Optional[dict]:
     if column == 'qid':
         return {
             'phrase': 'Query ID',
-            'short_desc': 'Unique ID of query in frame',
+            'short_desc': 'ID of query in frame',
             'type': str,
         }
     if column == 'docno':
         return {
             'phrase': 'External Document ID',
-            'short_desc': 'Unique string ID of document in collection',
+            'short_desc': 'String ID of document in collection',
             'type': str,
         }
     if column == 'docid':
         return {
             'phrase': 'Internal Document ID',
-            'short_desc': 'Unique integer ID of document in a specific index',
+            'short_desc': 'Integer ID of document in a specific index',
             'type': int,
         }
     if column == 'score':

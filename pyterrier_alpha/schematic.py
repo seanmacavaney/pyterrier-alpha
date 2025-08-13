@@ -219,7 +219,7 @@ _css = '''
     top: 0;
     left: 0;
     max-height: 100%;
-    border: 1px solid black;
+    border: 1px solid rgb(66, 153, 225);
     overflow-y: auto;
     display: none;
     background: white;
@@ -234,7 +234,7 @@ _css = '''
     display: none;
 }
 #ID .infobox-title {
-    background: black;
+    background: rgb(66, 153, 225);
     color: white;
     padding: 2px 6px;
     position: sticky;
@@ -247,7 +247,7 @@ _css = '''
     cursor: pointer;
 }
 #ID .infobox-source.transformer {
-    background: rgba(100, 100, 100, 0.4);
+    background: rgba(66, 153, 225, 0.4);
 }
 #ID .infobox-source.df {
     background-color: #ddd;
@@ -327,14 +327,14 @@ _css = '''
     min-width: 100%;
 }
 #ID .df-columns td, #ID .df-columns th {
-    border-top: 1px solid black;
+    border-top: 1px solid #bbb;
     background: white;
     text-align: left;
     padding: 2px 2px 2px 4px;
     white-space: nowrap;
 }
 #ID .df-columns .add th, #ID .df-columns .add td {
-    background: #ecf7ed;
+    background-color: rgb(203, 223, 244);
 }
 #ID .df-columns td {
     width: 100%;
@@ -355,7 +355,7 @@ _css = '''
     display: inline-block;
     position: relative;
     color: #333;
-    background: rgba(100, 100, 100, 0.3);
+    background: rgba(66, 153, 225, 0.3);
     box-sizing: border-box;
     padding: 4px 18px;
     clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
@@ -603,7 +603,7 @@ def _draw_html_schematic(schematic: dict, *, mode: str = 'outer') -> None:
                 infobox = f'''
                 <div class="infobox-item" id="id-{uid}" data-title="Transformer">
                     <div style="font-family: monospace; padding: 3px 6px;">
-                        {'<a href="' + doc_url + '" target="_blank">' if doc_url else ''}
+                        {'<a href="' + doc_url + '" target="_blank" onclick="window.event.stopPropagation();">' if doc_url else ''}
                         {cls_name}
                         {'</a>' if doc_url else ''}
                     </div>
