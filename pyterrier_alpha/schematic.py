@@ -208,17 +208,22 @@ pt.Compose._schematic = _compose_schematic
 
 _css = '''
 #ID {
-    padding: 16px;
     position: relative;
-    min-height: 96px;
+    min-height: 32px;
+    padding: 16px;
     --jp-ui-font-size1: 11px;
+    display: flex;
+    justify-content: center;
+}
+#ID.repr_html {
+    min-height: 96px;
 }
 
 #ID .infobox {
     position: absolute;
+    max-height: 300px;
     top: 0;
     left: 0;
-    max-height: 100%;
     border: 1px solid rgb(66, 153, 225);
     overflow-y: auto;
     display: none;
@@ -229,6 +234,9 @@ _css = '''
     font-size: 0.8em;
     max-width: 360px;
     min-width: 128px;
+}
+#ID.repr_html .infobox {
+    max-height: 100%;
 }
 #ID .infobox-item {
     display: none;
@@ -325,6 +333,7 @@ _css = '''
 #ID .df-columns {
     margin-bottom: 0;
     min-width: 100%;
+    border-collapse: collapse;
 }
 #ID .df-columns td, #ID .df-columns th {
     border-top: 1px solid #bbb;
@@ -446,6 +455,7 @@ _js = '''
     const infobox_title = document.querySelectorAll('#ID .infobox-title')[0];
     const infobox_body = document.querySelectorAll('#ID .infobox-body')[0];
     const container = document.querySelectorAll('#ID')[0];
+    const is_repr_html = container.classList.contains('repr_html');
     function replace_infobox(el) {
         if (infobox_source_el !== null) {
             infobox_source_el.classList.remove('infobox-source');
@@ -466,7 +476,7 @@ _js = '''
         } else {
             infobox.style.left = (elRect.right - contRect.left + 2) + 'px';
         }
-        // Move to top of this element (if there is vertical space, otherwise as cloase as possible)
+        // Move to top of this element (if there is vertical space, otherwise as close as possible)
         var top = elRect.top - contRect.top;
         if (top + infRect.height > contRect.height) {
             top = contRect.height - infRect.height;
@@ -725,5 +735,5 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
     return f'<div class="df {df_class}" data-infobox="id-{uid}">{df_label}{col_table}</div>'
 
 
-pt.Transformer._repr_html_ = draw
+pt.Transformer._repr_html_ = lambda x: draw(x, outer_cls='repr_html')
 pt.terrier.rewrite.RM3._schematic_settings = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
