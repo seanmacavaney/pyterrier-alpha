@@ -33,9 +33,6 @@ exclude = ["tests"]
 Repository = "https://github.com/seanmacavaney/pyterrier-alpha"
 "Bug Tracker" = "https://github.com/seanmacavaney/pyterrier-alpha/issues"
 
-[project.entry-points."pyterrier.artifact.url_protocol_resolver"]
-hf = "pyterrier_alpha.artifact:_hf_url_resolver"
-
 [tool.ruff]
 line-length = 120
 exclude = ["tests"]
