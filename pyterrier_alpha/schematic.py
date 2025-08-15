@@ -536,7 +536,7 @@ _js = '''
 '''
 
 
-def draw(transformer: Union[pt.Transformer, dict]) -> str:
+def draw(transformer: Union[pt.Transformer, dict], *, outer_cls: Optional[str] = None) -> str:
     """Draws a transformer as an HTML schematic.
 
     If the transformer is already a structured schematic, it will be drawn directly.
@@ -552,16 +552,16 @@ def draw(transformer: Union[pt.Transformer, dict]) -> str:
         schematic = transformer
     else:
         schematic = transformer_schematic(transformer)
-    return draw_html_schematic(schematic)
+    return draw_html_schematic(schematic, outer_cls=outer_cls)
 
 
-def draw_html_schematic(schematic: dict) -> str:
+def draw_html_schematic(schematic: dict, *, outer_cls: Optional[str] = None) -> str:
     """Draws a structured schematic as an HTML representation."""
     uid = str(uuid.uuid4())
     css = _css.replace('#ID', f'#id-{uid}')
     js = _js.replace('#ID', f'#id-{uid}')
     return f'''
-    <div id="id-{uid}">
+    <div id="id-{uid}" class="{outer_cls or ''}">
         <style>{css}</style>
         {_draw_html_schematic(schematic)}
         <div class="infobox">
