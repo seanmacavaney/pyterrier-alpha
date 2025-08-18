@@ -35,3 +35,4 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     transform
     utils
     validate
+    schematics

@@ -42,7 +42,7 @@ class ProvidesSchematicTitle(Protocol):
 def transformer_title(transformer: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> str:
     """Returns a title for the transformer for use in schematic diagrams.
 
-    This function tries to use :method:`ProvidesSchematicTitle._schematic_title` on the transformer, but
+    This function tries to use :meth:`ProvidesSchematicTitle._schematic_title` on the transformer, but
     if that is not available, it falls back to the class name of the transformer.
 
     Transformer titles should be very short, ideally only a word or two, as they will be used in schematic diagrams.
@@ -57,7 +57,7 @@ def transformer_title(transformer: pt.Transformer, *, input_columns: Optional[Li
     """
     if isinstance(transformer, ProvidesSchematicTitle):
         if callable(transformer._schematic_title):
-            return transformer._schematic_title()
+            return transformer._schematic_title(input_columns=input_columns)
         return transformer._schematic_title
     elif hasattr(transformer, '__class__') and hasattr(transformer.__class__, '__name__'):
         return transformer.__class__.__name__
@@ -91,7 +91,7 @@ class ProvidesSchematicSettings(Protocol):
 def transformer_settings(transformer: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> dict:
     """Returns a dictionary containing the transformer's settings for use in schematic diagrams.
 
-    This function tries to use :method:`ProvidesSchematicSettings._schematic_settings` on the transformer, but
+    This function tries to use :meth:`ProvidesSchematicSettings._schematic_settings` on the transformer, but
     if that is not available, it returns an empty dictionary (i.e., no settings).
 
     Args:
@@ -103,7 +103,7 @@ def transformer_settings(transformer: pt.Transformer, *, input_columns: Optional
         A dictionary containing the settings of the transformer, suitable for use in schematic diagrams.
     """
     if isinstance(transformer, ProvidesSchematicSettings):
-        return transformer._schematic_settings()
+        return transformer._schematic_settings(input_columns=input_columns)
     return {}
 
 
@@ -181,7 +181,7 @@ def transformer_schematic(
 
 pt.terrier.Retriever._schematic_title = 'BM25'
 pt.rewrite.SequentialDependence._schematic_title = 'SDM'
-def _compose_schematic(self: pt.Transformer, input_columns: Optional[List[str]] = None) -> dict:
+def _compose_schematic(self: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> dict:
     """Builds a schematic of the Compose transformer."""
     if len(self) == 1:
         return transformer_schematic(self[0], input_columns=input_columns)
@@ -736,4 +736,4 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
 
 
 pt.Transformer._repr_html_ = lambda x: draw(x, outer_cls='repr_html')
-pt.terrier.rewrite.RM3._schematic_settings = lambda x: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
+pt.terrier.rewrite.RM3._schematic_settings = lambda x, **kwargs: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
