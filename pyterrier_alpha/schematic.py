@@ -179,7 +179,16 @@ def transformer_schematic(
 # A few temporary shims:
 #   (these will need to be moved to the approprate place and/or implemented correctly)
 
-pt.terrier.Retriever._schematic_title = 'BM25'
+pt.terrier.Retriever._schematic_title = lambda self: self.controls['wmodel']
+
+pt._ops.FeatureUnion._schematic_title = 'FeatureUnion **'
+pt._ops.RankCutoff._schematic_title = 'RankCutoff %'
+pt._ops.RankCutoff._schematic_settings = lambda x: {'k': x.k}
+pt._ops.ScalarProduct._schematic_title = 'ScalarProduct *'
+pt._ops.ScalarProduct._schematic_settings = lambda x: {'scalar': x.scalar}
+pt._ops.SetIntersection._schematic_title = 'SetIntersection &'
+pt._ops.SetUnion._schematic_title = 'SetUnion |'
+pt._ops.Sum._schematic_title = 'Sum +'
 pt.rewrite.SequentialDependence._schematic_title = 'SDM'
 def _compose_schematic(self: pt.Transformer, *, input_columns: Optional[List[str]] = None) -> dict:
     """Builds a schematic of the Compose transformer."""
