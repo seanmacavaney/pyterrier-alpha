@@ -30,7 +30,6 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
     artifact
     dataframe_builder
     rbo
-    inspect
     fusion
     transform
     utils
