@@ -2,7 +2,7 @@
 
 Part of pyterrier core since: TODO
 """
-from pyterrier.inspect import InspectError, ProvidesTransformerOutputs, artifact_type_format, transformer_outputs
+from pyterrier.inspect import HasTransformOutputs, InspectError, artifact_type_format, transformer_outputs
 
 __all__ = [
     'artifact_type_format',
@@ -10,3 +10,5 @@ __all__ = [
     'ProvidesTransformerOutputs',
     'transformer_outputs',
 ]
+
+ProvidesTransformerOutputs = HasTransformOutputs # new name in core, map here for now
