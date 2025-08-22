@@ -10,7 +10,7 @@ from pyterrier_alpha.utils import PeekableIter
 
 # temporary
 try:
-    from pyterrier.validate import InputValidationError, InputValidationWarning
+    from pyterrier.validate import InputValidationError, InputValidationWarning, _TransformerMode
 except ImportError:
     class _TransformerMode:
         def __init__(self, missing_columns: List[str], extra_columns: List[str], mode_name: Optional[str] = None):
