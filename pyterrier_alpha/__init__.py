@@ -3,7 +3,7 @@
 Functionality provided by this package is subject to change in future versions.
 """
 
-__version__ = '0.15.1'
+__version__ = '0.16.0'
 
 from pyterrier_alpha import artifact, fusion, inspect, io, transform, utils, validate
 from pyterrier_alpha.artifact import Artifact, ArtifactBuilder, ArtifactBuilderMode
