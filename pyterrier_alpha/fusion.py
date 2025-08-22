@@ -40,6 +40,8 @@ class RRFusion(pt.Transformer):
 
   .. cite.dblp:: conf/sigir/CormackCB09
   """
+  schematic = {'inner_pipelines_mode': 'combine'}
+
   def __init__(self,
     *transformers: pt.Transformer,
     k: int = 60,
@@ -61,13 +63,17 @@ class RRFusion(pt.Transformer):
     """Performs the reciprocal rank fusion on the input data."""
     return rr_fusion(*[t(inp) for t in self.transformers], k=self.k, num_results=self.num_results)
 
-  def _schematic(self, input_columns: Optional[list[str]] = None) -> dict:
-    schematic = pta.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
-    schematic['inner_schematic'] = {
-      'type': 'linked_pipelines',
-      'pipelines': [pta.schematic.transformer_schematic(t, input_columns=input_columns) for t in self.transformers],
-    }
-    return schematic
+  # def schematic(self, *, input_columns: Optional[list[str]] = None) -> dict:
+  #   """Returns the schematic representation of the transformer."""
+  #   schematic = pt.schematic.transformer_schematic(self, input_columns=input_columns, default=True)
+  #   schematic['inner_pipelines']['mode'] = 'linked'
+  #   return schematic
+  #   # schematic['inner_schematic'] = {
+  #   #   'type': 'pipelines',
+  #   #   'mode': 'linked',
+  #   #   'pipelines': [pta.schematic.transformer_schematic(t, input_columns=input_columns) for t in self.transformers],
+  #   # }
+  #   # return schematic
 
 
 def rr_fusion(

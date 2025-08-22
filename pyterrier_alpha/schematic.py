@@ -104,7 +104,11 @@ def transformer_settings(transformer: pt.Transformer, *, input_columns: Optional
     """
     if isinstance(transformer, ProvidesSchematicSettings):
         return transformer._schematic_settings(input_columns=input_columns)
-    return {}
+    try:
+        attributes = pt.inspect.transformer_attributes(transformer)
+        return {attr.name: attr.value for attr in attributes}
+    except pt.inspect.InspectError:
+        return {}
 
 
 @runtime_checkable
@@ -179,13 +183,13 @@ def transformer_schematic(
 # A few temporary shims:
 #   (these will need to be moved to the approprate place and/or implemented correctly)
 
-pt.terrier.Retriever._schematic_title = lambda self: self.controls['wmodel']
+pt.terrier.Retriever._schematic_title = lambda self, *, input_columns: self.controls['wmodel']
 
 pt._ops.FeatureUnion._schematic_title = 'FeatureUnion **'
 pt._ops.RankCutoff._schematic_title = 'RankCutoff %'
-pt._ops.RankCutoff._schematic_settings = lambda x: {'k': x.k}
+# pt._ops.RankCutoff._schematic_settings = lambda x: {'k': x.k}
 pt._ops.ScalarProduct._schematic_title = 'ScalarProduct *'
-pt._ops.ScalarProduct._schematic_settings = lambda x: {'scalar': x.scalar}
+# pt._ops.ScalarProduct._schematic_settings = lambda x: {'scalar': x.scalar}
 pt._ops.SetIntersection._schematic_title = 'SetIntersection &'
 pt._ops.SetUnion._schematic_title = 'SetUnion |'
 pt._ops.Sum._schematic_title = 'Sum +'
@@ -745,4 +749,4 @@ def _draw_df_html(columns: Optional[List[str]], prev_columns: Optional[List[str]
 
 
 pt.Transformer._repr_html_ = lambda x: draw(x, outer_cls='repr_html')
-pt.terrier.rewrite.RM3._schematic_settings = lambda x, **kwargs: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
+# pt.terrier.rewrite.RM3._schematic_settings = lambda x, **kwargs: {'fb_docs': x.fb_docs, 'fb_terms': x.fb_terms}
