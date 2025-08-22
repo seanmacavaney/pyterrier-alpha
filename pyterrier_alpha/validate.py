@@ -8,40 +8,43 @@ import pandas as pd
 
 from pyterrier_alpha.utils import PeekableIter
 
+# temporary
+try:
+    from pyterrier.validate import InputValidationError, InputValidationWarning
+except ImportError:
+    class _TransformerMode:
+        def __init__(self, missing_columns: List[str], extra_columns: List[str], mode_name: Optional[str] = None):
+            self.missing_columns = missing_columns
+            self.extra_columns = extra_columns
+            self.mode_name = mode_name
 
-class _TransformerMode:
-    def __init__(self, missing_columns: List[str], extra_columns: List[str], mode_name: Optional[str] = None):
-        self.missing_columns = missing_columns
-        self.extra_columns = extra_columns
-        self.mode_name = mode_name
+        def __str__(self):
+            return f'{self.mode_name} (missing: {self.missing_columns}, extra: {self.extra_columns})'
 
-    def __str__(self):
-        return f'{self.mode_name} (missing: {self.missing_columns}, extra: {self.extra_columns})'
-
-    def __repr__(self):
-        return f'TransformerMode(missing_columns={self.missing_columns!r}, ' \
-               f'extra_columns={self.extra_columns!r}, ' \
-               f'mode_name={self.mode_name!r})'
-
-
-class InputValidationError(KeyError):
-    """Exception raised when input validation fails."""
-    def __init__(self, message: str, modes: List[_TransformerMode]):
-        """Create an InputValidationError."""
-        assert len(modes) > 0
-        super().__init__(message)
-        self.modes = modes
-
-    def __str__(self):
-        return self.args[0] + ' ' + str(self.modes)
-
-    def __repr__(self):
-        return f'InputValidationError({self.args[0]!r}, {self.modes!r})'
+        def __repr__(self):
+            return f'TransformerMode(missing_columns={self.missing_columns!r}, ' \
+                   f'extra_columns={self.extra_columns!r}, ' \
+                   f'mode_name={self.mode_name!r})'
 
 
-class InputValidationWarning(Warning):
-    """Warning raised when input validation fails in warn mode."""
-    pass
+    class InputValidationError(KeyError):
+        """Exception raised when input validation fails."""
+        def __init__(self, message: str, modes: List[_TransformerMode]):
+            """Create an InputValidationError."""
+            assert len(modes) > 0
+            super().__init__(message)
+            self.modes = modes
+
+        def __str__(self):
+            return self.args[0] + ' ' + str(self.modes)
+
+        def __repr__(self):
+            return f'InputValidationError({self.args[0]!r}, {self.modes!r})'
+
+
+    class InputValidationWarning(Warning):
+        """Warning raised when input validation fails in warn mode."""
+        pass
 
 
 def columns(inp: pd.DataFrame,

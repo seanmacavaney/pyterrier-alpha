@@ -15,9 +15,12 @@ __all__ = [
 ]
 
 
-class InspectError(TypeError):
-    """Base exception for inspection errors."""
-    pass
+try:
+    from pyterrier.inspect import InspectError
+except ImportError:
+    class InspectError(TypeError):
+        """Base exception for inspection errors."""
+        pass
 
 
 @runtime_checkable
