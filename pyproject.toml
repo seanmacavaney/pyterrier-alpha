@@ -22,6 +22,11 @@ classifiers = [
 ]
 dynamic = ["version", "dependencies"]
 
+[project.optional-dependencies]
+parallel = [
+  'joblib', # used by parallel to fork multiple processes
+]
+
 [tool.setuptools.dynamic]
 version = {attr = "pyterrier_alpha.__version__"}
 dependencies = {file = ["requirements.txt"]}
