@@ -53,10 +53,10 @@ jobs:
       run: |
         pytest --durations=20 -p no:faulthandler tests/test_grid.py tests/test_grid.py tests/test_parallel.py tests/test_pool.py
 
-   - name: Report Test Results
-     if: always()
-     run: |
-       printf "**Test Results**\n\n" >> $GITHUB_STEP_SUMMARY
-       jq '.summary' ${{ env.runtag }}.results.json >> $GITHUB_STEP_SUMMARY
-       printf "\n\n**Test Coverage**\n\n" >> $GITHUB_STEP_SUMMARY
-       jq '.files | to_entries[] | " - `" + .key + "`: **" + .value.summary.percent_covered_display + "%**"' -r ${{ env.runtag }}.coverage.json >> $GITHUB_STEP_SUMMARY
+    - name: Report Test Results
+      if: always()
+      run: |
+        printf "**Test Results**\n\n" >> $GITHUB_STEP_SUMMARY
+        jq '.summary' ${{ env.runtag }}.results.json >> $GITHUB_STEP_SUMMARY
+        printf "\n\n**Test Coverage**\n\n" >> $GITHUB_STEP_SUMMARY
+        jq '.files | to_entries[] | " - `" + .key + "`: **" + .value.summary.percent_covered_display + "%**"' -r ${{ env.runtag }}.coverage.json >> $GITHUB_STEP_SUMMARY
