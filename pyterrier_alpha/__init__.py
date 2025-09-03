@@ -5,7 +5,7 @@ Functionality provided by this package is subject to change in future versions.
 
 __version__ = '0.16.2'
 
-from pyterrier_alpha import artifact, fusion, inspect, io, transform, utils, validate
+from pyterrier_alpha import artifact, fusion, inspect, io, parallel, transform, utils, validate
 from pyterrier_alpha.artifact import Artifact, ArtifactBuilder, ArtifactBuilderMode
 from pyterrier_alpha.dataframe_builder import DataFrameBuilder
 from pyterrier_alpha.fusion import RRFusion
@@ -24,6 +24,7 @@ __all__ = [
     'inspect',
     'io',
     'rbo',
+    'parallel',
     'transform',
     'transformer_repr',
     'utils',
