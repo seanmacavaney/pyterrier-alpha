@@ -38,7 +38,7 @@ line-length = 120
 exclude = ["tests"]
 
 [tool.ruff.lint]
-select = ["F", "E", "W", "TID", "N", "ANN001", "ANN201"]
+select = ["F", "E", "W", "TID", "N"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
