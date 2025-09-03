@@ -42,6 +42,8 @@ class RRFusion(pt.Transformer):
 
   .. cite.dblp:: conf/sigir/CormackCB09
   """
+  schematic = {'inner_pipelines_mode': 'combine'}
+
   def __init__(self,
     *transformers: pt.Transformer,
     k: int = 60,
