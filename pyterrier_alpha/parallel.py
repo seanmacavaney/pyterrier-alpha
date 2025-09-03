@@ -1,4 +1,3 @@
-from . import Transformer
 import pandas as pd
 import pyterrier as pt
 
@@ -55,9 +54,9 @@ def _parallel_lambda_joblib(function, inputs, jobs):
         parallel_mp = _joblib_with_initializer(parallel, pt.java.parallel_init, pt.java.parallel_init_args())
         return parallel_mp(
             delayed(function)(input) for input in inputs)
-        
 
-class PoolParallelTransformer(Transformer):
+
+class PoolParallelTransformer(pt.Transformer):
 
     def __init__(self, parent, n_jobs, backend='joblib', **kwargs):
         super().__init__(**kwargs)
@@ -74,9 +73,10 @@ class PoolParallelTransformer(Transformer):
     def _transform_joblib(self, splits):
         from joblib import Parallel, delayed
         with Parallel(n_jobs=self.n_jobs) as parallel:
-            results = _joblib_with_initializer(parallel, pt.java.parallel_init, pt.java.parallel_init_args())(delayed(self.parent)(topics) for topics in splits)
+            init = _joblib_with_initializer(parallel, pt.java.parallel_init, pt.java.parallel_init_args())
+            results = init(delayed(self.parent)(topics) for topics in splits)
             return pd.concat(results)
-        
+
     def _transform_ray(self, splits):
         from ray.util.multiprocessing import Pool
         with Pool(self.n_jobs, pt.java.parallel_init, pt.java.parallel_init_args()) as pool:
@@ -85,7 +85,7 @@ class PoolParallelTransformer(Transformer):
 
     def transform(self, topics_and_res):
         splits = pt.model.split_df(topics_and_res, self.n_jobs)
-        
+
         rtr = None
         if self.backend == 'joblib':
             rtr =  self._transform_joblib(splits)
