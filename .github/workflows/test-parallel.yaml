@@ -44,7 +44,7 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install --upgrade -r requirements.txt -r requirements_dev.txt
-        pip install -e .
+        pip install -e .[parallel]
 
     - name: Unit Test
       env:
