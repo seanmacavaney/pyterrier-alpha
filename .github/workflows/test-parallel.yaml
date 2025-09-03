@@ -1,11 +1,11 @@
-name: test / parallel
+name: test-parallel
 
 on:
   push: {} # all pushes
   pull_request: {} # all PRs
 
 jobs:
-  build:
+  pytest:
     strategy:
       matrix:
         os: ['ubuntu-latest']
