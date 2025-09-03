@@ -1,7 +1,7 @@
 name: test / parallel
 
 on:
-  push: {branches: [main]} # pushes to main
+  push: {} # all pushes
   pull_request: {} # all PRs
 
 jobs:
