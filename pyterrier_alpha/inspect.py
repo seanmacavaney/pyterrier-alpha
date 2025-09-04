@@ -42,8 +42,7 @@ class ProvidesTransformerOutputs(Protocol):
     inspect the behavior is undesireable, e.g., if calling the transformer is expensive.
 
     .. code-block:: python
-        :caption: Example ``transform_output`` function, implementing
-        :class:`~pyterrier_alpha.inspect.ProvidesTransformerOutputs`.
+        :caption: Example ``transform_output`` function, implementing :class:`~pyterrier_alpha.inspect.ProvidesTransformerOutputs`.
 
         class MyRetriever(pt.Transformer):
 
