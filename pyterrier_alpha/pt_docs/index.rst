@@ -27,7 +27,6 @@ Import ``pyterrier_alpha`` alongside ``pyterrier``:
 .. toctree::
     :maxdepth: 1
 
-    artifact
     dataframe_builder
     rbo
     inspect
