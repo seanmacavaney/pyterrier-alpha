@@ -42,7 +42,7 @@ class RRFusion(pt.Transformer):
 
   .. cite.dblp:: conf/sigir/CormackCB09
   """
-  schematic = {'inner_pipelines_mode': 'combine'}
+  schematic = {'inner_pipelines_mode': 'combine', 'label': 'RRF'}
 
   def __init__(self,
     *transformers: pt.Transformer,
@@ -91,6 +91,8 @@ def rr_fusion(
     for qid, v in r.groupby('qid'):
       all_qids[qid].append(v)
   res = []
+  if len(all_qids) == 0:
+      all_qids[None] = results
   for qid, qid_frames in all_qids.items():
     merged_frame = qid_frames[0]
     for next_frame in qid_frames[1:]:
