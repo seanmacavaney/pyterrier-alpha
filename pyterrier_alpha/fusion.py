@@ -82,10 +82,12 @@ def rr_fusion(
 
   .. cite.dblp:: conf/sigir/CormackCB09
   """
-  assert len(results) > 0
   all_qids = defaultdict(list)
   for r in results:
     pta.validate.result_frame(r, extra_columns=['score'])
+    r["qid"] = r["qid"].astype(str)
+    r["query"] = r["query"].astype(str)
+    r["docno"] = r["docno"].astype(str)
     pt.model.add_ranks(r)
     r = r[['qid', 'query', 'docno']].assign(score=1/(r['rank'] + k))
     for qid, v in r.groupby('qid'):
